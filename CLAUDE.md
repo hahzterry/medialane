@@ -23,8 +23,18 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   (`assets/src/settings.js`), resolved via `GET /v1/collections?owner=` and
   persisted to `wp_options` through `/settings/collection`.
 - Post state (`none|minting|minted|error`) lives in post meta, written only by
-  PHP (`includes/class-post-meta.php`) via the `/posts/{id}/minted` and
-  `/posts/{id}/error` REST routes — JS never writes post meta directly.
+  PHP (`includes/class-post-meta.php`) via the `/posts/{id}/minting`,
+  `/posts/{id}/minted`, and `/posts/{id}/error` REST routes — JS never writes
+  post meta directly.
+- The mint sequence itself (upload metadata → create mint intent → execute →
+  mark minted) is shared between the per-post metabox and the Posts-list bulk
+  action via `assets/src/mint-flow.js`'s `tokenizeOne()` — both callers only
+  connect the wallet and gather post data differently, then delegate.
+- All admin screens that enqueue plugin JS share one localized global name,
+  `medialaneData` (see `wp_localize_script` calls in `class-settings.php`,
+  `class-metabox.php`, `class-bulk-action.php`) — safe because each only
+  enqueues on its own mutually exclusive admin screen (settings page vs. post
+  editor vs. Posts list).
 
 ## Common pitfalls
 

@@ -1,24 +1,8 @@
-import { connectWallet, executeCalls } from "./wallet.js";
-import { uploadJson, createMintIntent } from "./api.js";
-
-async function markMinted(postId, data) {
-  await fetch(`${window.medialaneBulkData.restUrl}/posts/${postId}/minted`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-WP-Nonce": window.medialaneBulkData.nonce },
-    body: JSON.stringify(data),
-  });
-}
-
-async function markError(postId, message) {
-  await fetch(`${window.medialaneBulkData.restUrl}/posts/${postId}/error`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-WP-Nonce": window.medialaneBulkData.nonce },
-    body: JSON.stringify({ message }),
-  });
-}
+import { connectWallet } from "./wallet.js";
+import { tokenizeOne, markError } from "./mint-flow.js";
 
 export async function tokenizeBulk(postIds, onProgress) {
-  const data = window.medialaneBulkData;
+  const data = window.medialaneData;
   if (!data.collectionContract) {
     throw new Error("No collection configured.");
   }
@@ -30,19 +14,21 @@ export async function tokenizeBulk(postIds, onProgress) {
     onProgress && onProgress(postId, "minting");
     try {
       const body = data.contentScope === "full" ? post.content : post.excerpt;
-      const metaRes = await uploadJson({ name: post.title, description: body, image: post.image || undefined, license: "All Rights Reserved" });
-      const intentRes = await createMintIntent({
-        owner: address,
-        collectionId: data.collectionContract,
-        recipient: address,
-        tokenUri: metaRes.data.url,
-        royaltyBps: 0,
+      await tokenizeOne({
+        restUrl: data.restUrl,
+        nonce: data.nonce,
+        postId,
+        collectionContract: data.collectionContract,
+        title: post.title,
+        body,
+        image: post.image,
+        license: "All Rights Reserved",
+        account,
+        address,
       });
-      const txHash = await executeCalls(account, intentRes.data.calls);
-      await markMinted(postId, { tokenId: "", txHash, contract: data.collectionContract, license: "All Rights Reserved" });
       onProgress && onProgress(postId, "minted");
     } catch (err) {
-      await markError(postId, err.message || "Something went wrong");
+      await markError(data.restUrl, data.nonce, postId, err.message || "Something went wrong");
       onProgress && onProgress(postId, "error", err.message);
     }
   }

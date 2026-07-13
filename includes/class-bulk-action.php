@@ -36,7 +36,9 @@ class BulkAction {
 			);
 		}
 		wp_enqueue_script( 'medialane-bulk-action', MEDIALANE_PLUGIN_URL . 'assets/dist/bulk-action.js', array(), MEDIALANE_PLUGIN_VERSION, true );
-		wp_localize_script( 'medialane-bulk-action', 'medialaneBulkData', array(
+		// Same global name as class-metabox.php/class-settings.php use — safe
+		// because each only enqueues on its own mutually exclusive admin screen.
+		wp_localize_script( 'medialane-bulk-action', 'medialaneData', array(
 			'restUrl'            => esc_url_raw( rest_url( 'medialane/v1' ) ),
 			'nonce'              => wp_create_nonce( 'wp_rest' ),
 			'collectionContract' => Settings::get_collection_contract(),

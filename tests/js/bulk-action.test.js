@@ -13,7 +13,7 @@ vi.mock("../../assets/src/api.js", () => ({
 describe("tokenizeBulk", () => {
   beforeEach(() => {
     global.window = {
-      medialaneBulkData: {
+      medialaneData: {
         collectionContract: "0xcol",
         contentScope: "excerpt",
         restUrl: "/wp-json/medialane/v1",

@@ -1,0 +1,66 @@
+<?php
+
+namespace Medialane;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class PostMeta {
+	const STATUS_NONE    = 'none';
+	const STATUS_MINTING = 'minting';
+	const STATUS_MINTED  = 'minted';
+	const STATUS_ERROR   = 'error';
+
+	const KEY_STATUS   = '_medialane_status';
+	const KEY_TOKEN_ID = '_medialane_token_id';
+	const KEY_TX_HASH  = '_medialane_tx_hash';
+	const KEY_CONTRACT = '_medialane_contract';
+	const KEY_LICENSE  = '_medialane_license';
+	const KEY_ERROR    = '_medialane_error';
+
+	public static function register() {
+		$string_field = array(
+			'show_in_rest' => false,
+			'single'       => true,
+			'type'         => 'string',
+			'auth_callback' => function () {
+				return current_user_can( 'edit_posts' );
+			},
+		);
+		register_post_meta( 'post', self::KEY_STATUS, $string_field );
+		register_post_meta( 'post', self::KEY_TOKEN_ID, $string_field );
+		register_post_meta( 'post', self::KEY_TX_HASH, $string_field );
+		register_post_meta( 'post', self::KEY_CONTRACT, $string_field );
+		register_post_meta( 'post', self::KEY_LICENSE, $string_field );
+		register_post_meta( 'post', self::KEY_ERROR, $string_field );
+	}
+
+	public static function get_status( int $post_id ): string {
+		$status = get_post_meta( $post_id, self::KEY_STATUS, true );
+		return $status ? $status : self::STATUS_NONE;
+	}
+
+	public static function set_minting( int $post_id ) {
+		update_post_meta( $post_id, self::KEY_STATUS, self::STATUS_MINTING );
+		delete_post_meta( $post_id, self::KEY_ERROR );
+	}
+
+	public static function save_minted( int $post_id, array $data ) {
+		update_post_meta( $post_id, self::KEY_STATUS, self::STATUS_MINTED );
+		update_post_meta( $post_id, self::KEY_TOKEN_ID, sanitize_text_field( $data['token_id'] ) );
+		update_post_meta( $post_id, self::KEY_TX_HASH, sanitize_text_field( $data['tx_hash'] ) );
+		update_post_meta( $post_id, self::KEY_CONTRACT, sanitize_text_field( $data['contract'] ) );
+		update_post_meta( $post_id, self::KEY_LICENSE, sanitize_text_field( $data['license'] ) );
+		delete_post_meta( $post_id, self::KEY_ERROR );
+	}
+
+	public static function save_error( int $post_id, string $message ) {
+		update_post_meta( $post_id, self::KEY_STATUS, self::STATUS_ERROR );
+		update_post_meta( $post_id, self::KEY_ERROR, sanitize_text_field( $message ) );
+	}
+
+	public static function get_error( int $post_id ): string {
+		return (string) get_post_meta( $post_id, self::KEY_ERROR, true );
+	}
+}

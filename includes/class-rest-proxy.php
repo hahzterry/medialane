@@ -55,6 +55,11 @@ class RestProxy {
 			'callback'            => array( __CLASS__, 'forward_list_collections' ),
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
 		) );
+		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/minting', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_minting' ),
+			'permission_callback' => array( __CLASS__, 'check_permission' ),
+		) );
 		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/minted', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'save_minted' ),
@@ -65,6 +70,12 @@ class RestProxy {
 			'callback'            => array( __CLASS__, 'save_error' ),
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
 		) );
+	}
+
+	public static function save_minting( \WP_REST_Request $request ) {
+		$post_id = (int) $request->get_param( 'id' );
+		PostMeta::set_minting( $post_id );
+		return rest_ensure_response( array( 'status' => PostMeta::get_status( $post_id ) ) );
 	}
 
 	public static function save_minted( \WP_REST_Request $request ) {
@@ -142,10 +153,15 @@ class RestProxy {
 			return new \WP_Error( 'medialane_no_file', __( 'No file provided.', 'medialane' ), array( 'status' => 400 ) );
 		}
 		$file = $files['file'];
+		// Sanitize the filename before it goes into a hand-built multipart header —
+		// it originates from the browser's File.name and could otherwise carry
+		// quotes/CRLF into the request we send upstream.
+		$filename = sanitize_file_name( $file['name'] );
+		$content_type = preg_match( '#^[a-zA-Z0-9!#$&^_.+-]+/[a-zA-Z0-9!#$&^_.+-]+$#', $file['type'] ) ? $file['type'] : 'application/octet-stream';
 		$boundary = wp_generate_password( 24, false );
 		$body = "--{$boundary}\r\n"
-			. "Content-Disposition: form-data; name=\"file\"; filename=\"{$file['name']}\"\r\n"
-			. "Content-Type: {$file['type']}\r\n\r\n"
+			. "Content-Disposition: form-data; name=\"file\"; filename=\"{$filename}\"\r\n"
+			. "Content-Type: {$content_type}\r\n\r\n"
 			. file_get_contents( $file['tmp_name'] ) . "\r\n"
 			. "--{$boundary}--\r\n";
 		$response = wp_remote_post( MEDIALANE_BACKEND_URL . '/v1/metadata/upload-file', array(

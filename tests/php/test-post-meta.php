@@ -30,4 +30,14 @@ class Test_Post_Meta extends WP_UnitTestCase {
 		$this->assertSame( PostMeta::STATUS_ERROR, PostMeta::get_status( $post_id ) );
 		$this->assertSame( 'Transaction reverted', PostMeta::get_error( $post_id ) );
 	}
+
+	public function test_set_minting_sets_status_and_clears_prior_error() {
+		$post_id = $this->factory->post->create();
+		PostMeta::save_error( $post_id, 'Previous attempt failed' );
+
+		PostMeta::set_minting( $post_id );
+
+		$this->assertSame( PostMeta::STATUS_MINTING, PostMeta::get_status( $post_id ) );
+		$this->assertSame( '', PostMeta::get_error( $post_id ) );
+	}
 }

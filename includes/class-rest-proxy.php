@@ -45,6 +45,35 @@ class RestProxy {
 			'callback'            => array( __CLASS__, 'forward_get_token' ),
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
 		) );
+		register_rest_route( self::NAMESPACE, '/settings/collection', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_collection' ),
+			'permission_callback' => array( __CLASS__, 'check_permission' ),
+		) );
+		register_rest_route( self::NAMESPACE, '/collections', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'forward_list_collections' ),
+			'permission_callback' => array( __CLASS__, 'check_permission' ),
+		) );
+	}
+
+	public static function save_collection( \WP_REST_Request $request ) {
+		$address = (string) $request->get_param( 'contract' );
+		Settings::save_collection_contract( $address );
+		return rest_ensure_response( array( 'contract' => Settings::get_collection_contract() ) );
+	}
+
+	public static function forward_list_collections( \WP_REST_Request $request ) {
+		$key = self::api_key_or_error();
+		if ( is_wp_error( $key ) ) {
+			return $key;
+		}
+		$owner = (string) $request->get_param( 'owner' );
+		$response = wp_remote_get( MEDIALANE_BACKEND_URL . '/v1/collections?owner=' . rawurlencode( $owner ), array(
+			'headers' => array( 'x-api-key' => $key ),
+			'timeout' => 15,
+		) );
+		return self::relay( $response );
 	}
 
 	public static function check_permission(): bool {

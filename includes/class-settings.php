@@ -16,6 +16,20 @@ class Settings {
 	public static function register() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+	}
+
+	public static function enqueue( string $hook ) {
+		if ( 'settings_page_medialane-settings' !== $hook ) {
+			return;
+		}
+		wp_enqueue_script( 'medialane-settings', MEDIALANE_PLUGIN_URL . 'assets/dist/settings.js', array(), MEDIALANE_PLUGIN_VERSION, true );
+		wp_localize_script( 'medialane-settings', 'medialaneData', array(
+			'restUrl'            => esc_url_raw( rest_url( 'medialane/v1' ) ),
+			'nonce'              => wp_create_nonce( 'wp_rest' ),
+			'siteName'           => get_bloginfo( 'name' ),
+			'collectionContract' => self::get_collection_contract(),
+		) );
 	}
 
 	public static function add_settings_page() {

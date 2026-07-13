@@ -22,7 +22,9 @@ define( 'MEDIALANE_BACKEND_URL', 'https://medialane-backend-production.up.railwa
 require_once MEDIALANE_PLUGIN_DIR . 'includes/class-post-meta.php';
 require_once MEDIALANE_PLUGIN_DIR . 'includes/class-settings.php';
 require_once MEDIALANE_PLUGIN_DIR . 'includes/class-rest-proxy.php';
+require_once MEDIALANE_PLUGIN_DIR . 'includes/class-metabox.php';
 
 add_action( 'init', array( 'Medialane\\PostMeta', 'register' ) );
 add_action( 'init', array( 'Medialane\\Settings', 'register' ) );
+add_action( 'init', array( 'Medialane\\Metabox', 'register' ) );
 add_action( 'rest_api_init', array( 'Medialane\\RestProxy', 'register_routes' ) );

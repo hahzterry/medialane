@@ -55,6 +55,33 @@ class RestProxy {
 			'callback'            => array( __CLASS__, 'forward_list_collections' ),
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
 		) );
+		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/minted', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_minted' ),
+			'permission_callback' => array( __CLASS__, 'check_permission' ),
+		) );
+		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/error', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_error' ),
+			'permission_callback' => array( __CLASS__, 'check_permission' ),
+		) );
+	}
+
+	public static function save_minted( \WP_REST_Request $request ) {
+		$post_id = (int) $request->get_param( 'id' );
+		PostMeta::save_minted( $post_id, array(
+			'token_id' => (string) $request->get_param( 'tokenId' ),
+			'tx_hash'  => (string) $request->get_param( 'txHash' ),
+			'contract' => (string) $request->get_param( 'contract' ),
+			'license'  => (string) $request->get_param( 'license' ),
+		) );
+		return rest_ensure_response( array( 'status' => PostMeta::get_status( $post_id ) ) );
+	}
+
+	public static function save_error( \WP_REST_Request $request ) {
+		$post_id = (int) $request->get_param( 'id' );
+		PostMeta::save_error( $post_id, (string) $request->get_param( 'message' ) );
+		return rest_ensure_response( array( 'status' => PostMeta::get_status( $post_id ) ) );
 	}
 
 	public static function save_collection( \WP_REST_Request $request ) {

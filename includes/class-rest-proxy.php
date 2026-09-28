@@ -13,9 +13,10 @@ class RestProxy {
 	public static function register_routes() {
 		register_rest_route( self::NAMESPACE, '/metadata/upload', array(
 			'methods'             => 'POST',
-			'callback'            => array( __CLASS__, 'forward_json' ),
+			'callback'            => function ( \WP_REST_Request $request ) {
+				return self::forward_json( $request, '/v1/metadata/upload' );
+			},
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
-			'args'                => array( 'backend_path' => array( 'default' => '/v1/metadata/upload' ) ),
 		) );
 		register_rest_route( self::NAMESPACE, '/metadata/upload-file', array(
 			'methods'             => 'POST',
@@ -24,21 +25,24 @@ class RestProxy {
 		) );
 		register_rest_route( self::NAMESPACE, '/intents/create-collection', array(
 			'methods'             => 'POST',
-			'callback'            => array( __CLASS__, 'forward_json' ),
+			'callback'            => function ( \WP_REST_Request $request ) {
+				return self::forward_json( $request, '/v1/intents/create-collection' );
+			},
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
-			'args'                => array( 'backend_path' => array( 'default' => '/v1/intents/create-collection' ) ),
 		) );
 		register_rest_route( self::NAMESPACE, '/intents/mint', array(
 			'methods'             => 'POST',
-			'callback'            => array( __CLASS__, 'forward_json' ),
+			'callback'            => function ( \WP_REST_Request $request ) {
+				return self::forward_json( $request, '/v1/intents/mint' );
+			},
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
-			'args'                => array( 'backend_path' => array( 'default' => '/v1/intents/mint' ) ),
 		) );
 		register_rest_route( self::NAMESPACE, '/collections/sync-tx', array(
 			'methods'             => 'POST',
-			'callback'            => array( __CLASS__, 'forward_json' ),
+			'callback'            => function ( \WP_REST_Request $request ) {
+				return self::forward_json( $request, '/v1/collections/sync-tx' );
+			},
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
-			'args'                => array( 'backend_path' => array( 'default' => '/v1/collections/sync-tx' ) ),
 		) );
 		register_rest_route( self::NAMESPACE, '/tokens/(?P<contract>[a-zA-Z0-9x]+)/(?P<tokenId>[a-zA-Z0-9]+)', array(
 			'methods'             => 'GET',
@@ -126,13 +130,12 @@ class RestProxy {
 		return $key;
 	}
 
-	public static function forward_json( \WP_REST_Request $request ) {
+	public static function forward_json( \WP_REST_Request $request, string $backend_path ) {
 		$key = self::api_key_or_error();
 		if ( is_wp_error( $key ) ) {
 			return $key;
 		}
-		$path = $request->get_param( 'backend_path' );
-		$response = wp_remote_post( MEDIALANE_BACKEND_URL . $path, array(
+		$response = wp_remote_post( MEDIALANE_BACKEND_URL . $backend_path, array(
 			'headers' => array(
 				'Content-Type' => 'application/json',
 				'x-api-key'    => $key,

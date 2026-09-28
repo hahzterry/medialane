@@ -56,6 +56,9 @@ class Settings {
 	}
 
 	public static function get_api_key(): string {
+		if ( defined( 'MEDIALANE_API_KEY' ) && MEDIALANE_API_KEY ) {
+			return (string) MEDIALANE_API_KEY;
+		}
 		return (string) get_option( self::OPTION_API_KEY, '' );
 	}
 
@@ -92,6 +95,9 @@ class Settings {
 				);
 				?>
 			</p>
+			<?php if ( defined( 'MEDIALANE_API_KEY' ) && MEDIALANE_API_KEY ) : ?>
+				<p><em><?php esc_html_e( 'Set from wp-config.php — the field below is ignored while the MEDIALANE_API_KEY constant is defined.', 'medialane' ); ?></em></p>
+			<?php endif; ?>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'medialane' ); ?>
 				<table class="form-table">

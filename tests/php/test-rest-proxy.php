@@ -99,4 +99,21 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 
 		$this->assertSame( 403, $response->get_status() );
 	}
+
+	public function test_paymaster_routes_forward_to_the_fixed_backend_path() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		update_option( Settings::OPTION_API_KEY, 'test-key' );
+
+		$captured_urls = array();
+		add_filter( 'pre_http_request', function ( $preempt, $args, $url ) use ( &$captured_urls ) {
+			$captured_urls[] = $url;
+			return array( 'response' => array( 'code' => 200 ), 'body' => wp_json_encode( array( 'ok' => true ) ) );
+		}, 10, 3 );
+
+		$this->server->dispatch( new WP_REST_Request( 'POST', '/medialane/v1/paymaster/invoke/build' ) );
+		$this->server->dispatch( new WP_REST_Request( 'POST', '/medialane/v1/paymaster/invoke/execute' ) );
+
+		$this->assertStringEndsWith( '/v1/paymaster/invoke/build', $captured_urls[0] );
+		$this->assertStringEndsWith( '/v1/paymaster/invoke/execute', $captured_urls[1] );
+	}
 }

@@ -1,5 +1,13 @@
 import { connectWallet } from "./wallet.js";
-import { tokenizeOne, markError } from "./mint-flow.js";
+import { prepareMint, executeMintBatch } from "./mint-flow.js";
+
+const MAX_BATCH_SIZE = 25;
+
+function chunk(array, size) {
+  const out = [];
+  for (let i = 0; i < array.length; i += size) out.push(array.slice(i, i + size));
+  return out;
+}
 
 export async function tokenizeBulk(postIds, onProgress) {
   const data = window.medialaneData;
@@ -8,29 +16,25 @@ export async function tokenizeBulk(postIds, onProgress) {
   }
   const { address, account } = await connectWallet();
 
+  const entries = [];
   for (const postId of postIds) {
     const post = data.posts[postId];
     if (!post) continue;
-    onProgress && onProgress(postId, "minting");
-    try {
-      const body = data.contentScope === "full" ? post.content : post.excerpt;
-      await tokenizeOne({
-        restUrl: data.restUrl,
-        nonce: data.nonce,
-        postId,
-        collectionContract: data.collectionContract,
-        title: post.title,
-        body,
-        image: post.image,
-        license: "All Rights Reserved",
-        account,
-        address,
-      });
-      onProgress && onProgress(postId, "minted");
-    } catch (err) {
-      await markError(data.restUrl, data.nonce, postId, err.message || "Something went wrong");
-      onProgress && onProgress(postId, "error", err.message);
-    }
+    onProgress && onProgress(postId, "preparing");
+    const body = data.contentScope === "full" ? post.content : post.excerpt;
+    entries.push(await prepareMint({
+      postId, title: post.title, body, image: post.image, license: "All Rights Reserved", address,
+      collectionContract: data.collectionContract,
+    }));
+  }
+
+  for (const group of chunk(entries, MAX_BATCH_SIZE)) {
+    group.forEach((e) => onProgress && onProgress(e.postId, "minting"));
+    const results = await executeMintBatch({
+      restUrl: data.restUrl, nonce: data.nonce, account, address,
+      collectionContract: data.collectionContract, entries: group,
+    });
+    results.forEach((r) => onProgress && onProgress(r.postId, r.error ? "error" : "minted", r.error));
   }
 }
 

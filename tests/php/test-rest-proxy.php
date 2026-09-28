@@ -11,6 +11,9 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		global $wp_rest_server;
 		$this->server = $wp_rest_server = new \WP_REST_Server();
 		do_action( 'rest_api_init' );
+		// Normally granted by register_activation_hook on plugin activation;
+		// the test suite never activates the plugin, so grant it explicitly.
+		Settings::grant_default_capability();
 	}
 
 	public function test_returns_error_without_api_key() {
@@ -54,5 +57,46 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		remove_filter( 'pre_http_request', $intercept, 10 );
 
 		$this->assertStringEndsWith( '/v1/intents/mint', $captured_url );
+	}
+
+	public function test_editor_without_the_capability_is_rejected() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$request  = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 401, $response->get_status() );
+	}
+
+	public function test_editor_with_the_capability_can_reach_tokenize_routes() {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		get_role( 'editor' )->add_cap( Settings::CAP_TOKENIZE );
+		wp_set_current_user( $user_id );
+		update_option( Settings::OPTION_API_KEY, 'test-key' );
+
+		add_filter( 'pre_http_request', function () {
+			return array( 'response' => array( 'code' => 200 ), 'body' => wp_json_encode( array( 'ok' => true ) ) );
+		} );
+
+		$request = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
+		$request->set_body( wp_json_encode( array() ) );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+	}
+
+	public function test_a_user_with_the_capability_cannot_mark_a_post_they_cannot_edit() {
+		$post_id = $this->factory->post->create();
+
+		// Subscribers have no edit_posts capability at all by default, so this
+		// exercises the per-post ownership check independent of the tokenize
+		// capability itself.
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+		get_role( 'subscriber' )->add_cap( Settings::CAP_TOKENIZE );
+
+		$request  = new WP_REST_Request( 'POST', "/medialane/v1/posts/{$post_id}/minting" );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 403, $response->get_status() );
 	}
 }

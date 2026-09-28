@@ -16,63 +16,63 @@ class RestProxy {
 			'callback'            => function ( \WP_REST_Request $request ) {
 				return self::forward_json( $request, '/v1/metadata/upload' );
 			},
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/metadata/upload-file', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'forward_file' ),
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/intents/create-collection', array(
 			'methods'             => 'POST',
 			'callback'            => function ( \WP_REST_Request $request ) {
 				return self::forward_json( $request, '/v1/intents/create-collection' );
 			},
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/intents/mint', array(
 			'methods'             => 'POST',
 			'callback'            => function ( \WP_REST_Request $request ) {
 				return self::forward_json( $request, '/v1/intents/mint' );
 			},
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/collections/sync-tx', array(
 			'methods'             => 'POST',
 			'callback'            => function ( \WP_REST_Request $request ) {
 				return self::forward_json( $request, '/v1/tx/sync' );
 			},
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/tokens/(?P<contract>[a-zA-Z0-9x]+)/(?P<tokenId>[a-zA-Z0-9]+)', array(
 			'methods'             => 'GET',
 			'callback'            => array( __CLASS__, 'forward_get_token' ),
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/settings/collection', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'save_collection' ),
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/collections', array(
 			'methods'             => 'GET',
 			'callback'            => array( __CLASS__, 'forward_list_collections' ),
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/minting', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'save_minting' ),
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/minted', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'save_minted' ),
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/error', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'save_error' ),
-			'permission_callback' => array( __CLASS__, 'check_permission' ),
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
 	}
 
@@ -118,8 +118,19 @@ class RestProxy {
 		return self::relay( $response );
 	}
 
-	public static function check_permission(): bool {
+	public static function check_admin_permission(): bool {
 		return current_user_can( 'manage_options' );
+	}
+
+	public static function check_tokenize_permission( \WP_REST_Request $request ) {
+		if ( ! current_user_can( Settings::CAP_TOKENIZE ) ) {
+			return false;
+		}
+		$post_id = (int) $request->get_param( 'id' );
+		if ( $post_id > 0 && ! current_user_can( 'edit_post', $post_id ) ) {
+			return new \WP_Error( 'medialane_forbidden', __( "You can't tokenize a post you don't have edit access to.", 'medialane' ), array( 'status' => 403 ) );
+		}
+		return true;
 	}
 
 	private static function api_key_or_error() {

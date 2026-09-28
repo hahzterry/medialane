@@ -3,10 +3,12 @@
 Tokenize WordPress posts as on-chain IP assets on [Medialane](https://medialane.io), a
 Starknet-based protocol for programmable intellectual property. Connect a Starknet
 wallet, attach license terms, and mint any post — no custody, no server-side keys,
-no gas fees paid by Medialane.
+no gas fees.
 
-Status: **early / unreleased**. This plugin has not yet been run against a live
-WordPress installation — see [Development](#development) before relying on it.
+Status: JS (`npm test`) and PHP (`phpunit`) suites both pass for real (verified against
+a live WP core test install, not just statically reviewed). The plugin has **not** yet
+been activated and exercised on a live WordPress site with a real wallet extension —
+see [Development](#development) before relying on it in production.
 
 ## What it does
 
@@ -16,22 +18,37 @@ WordPress installation — see [Development](#development) before relying on it.
   IP asset: title, body/excerpt, and featured image are pinned to IPFS, and a
   license (All Rights Reserved / CC BY-SA / custom terms) is attached in the
   token metadata.
+- Minting is gas-sponsored: you still sign every transaction with your own
+  wallet, but nobody pays gas for it.
+- Tokenizing several posts at once from the Posts list bundles them into one
+  sponsored transaction — one signature for up to 25 posts, chunked into
+  sequential batches of 25 for larger selections — instead of a popup per post.
 - Mint status (`not minted` / `minting` / `minted` / `error`) is tracked per
   post, with the transaction hash and a block-explorer link once confirmed.
+- By default only Administrators can tokenize. Turning on **Let Editors
+  tokenize their own posts** (Settings → Medialane) grants a dedicated
+  `medialane_tokenize_posts` capability to the Editor role, scoped to posts
+  they can already edit — no full site-admin access required.
 
 ## How it works
 
 The plugin never holds a private key and never signs a transaction on your
-behalf — every mint is signed by your own connected wallet in the browser.
+behalf — every mint is signed by your own connected wallet in the browser,
+even though Medialane's paymaster covers the gas.
 
-- **PHP** (`includes/`) stores your Medialane API key server-side (`wp_options`)
-  and exposes a small WordPress REST proxy (`/wp-json/medialane/v1/*`) that
-  forwards allowlisted requests to the Medialane backend with that key attached.
-  The key never reaches the browser.
+- **PHP** (`includes/`) stores your Medialane API key server-side (`wp_options`,
+  or a `MEDIALANE_API_KEY` constant in `wp-config.php` if you'd rather keep it
+  out of the database) and exposes a small WordPress REST proxy
+  (`/wp-json/medialane/v1/*`) that forwards allowlisted requests to the
+  Medialane backend with that key attached. The key never reaches the browser.
+  Every route is gated on the `medialane_tokenize_posts` capability (tokenize
+  routes) or `manage_options` (settings), plus a per-post `edit_post` check on
+  routes that target a specific post.
 - **JavaScript** (`assets/src/`, bundled to `assets/dist/`) runs in the admin
   UI: it connects the wallet, calls the WordPress proxy (never the Medialane
-  backend directly) to upload metadata and build a mint transaction, then asks
-  the wallet to sign and submit it.
+  backend directly) to upload metadata and build a sponsored mint transaction,
+  then asks the wallet to sign it — no gas, no fee shown, because there isn't
+  one.
 - **Post meta** (`_medialane_status`, `_medialane_tx_hash`, `_medialane_contract`,
   `_medialane_token_id`, `_medialane_license`) is written only by PHP, never
   directly by JavaScript, so mint state always reflects a value the server
@@ -63,14 +80,20 @@ npm test           # runs the JS test suite (vitest)
 phpunit -c phpunit.xml.dist   # runs the PHP test suite (requires the WP core test library)
 ```
 
-Static review has checked this code against the real routes it depends on in
+To run `phpunit` locally, `WP_TESTS_DIR` needs to point at a real WordPress core
+test-library checkout; `bin/install-wp-tests.sh <db-name> <db-user> <db-pass>
+[db-host] [wp-version]` sets one up (needs `svn` and a reachable MySQL server).
+`.github/workflows/ci.yml` runs both suites — JS and PHP — on every push and PR.
+
+This code has been checked against the real routes it depends on in
 [`medialane-backend`](https://github.com/medialane-io/medialane-backend) and
 against the equivalent production mint flow in
-[`medialane-starknet`](https://github.com/medialane-io/medialane-starknet), but
-it has **not yet been executed** — `npm test` and `phpunit` have not been run,
-and the plugin has not been activated on a real WordPress site. If you're
-setting up a dev environment to test it, please open issues for anything that
-doesn't work as documented.
+[`medialane-starknet`](https://github.com/medialane-io/medialane-starknet), and
+both `npm test` and `phpunit` pass against a real WP core test install. What's
+still unverified: the plugin has not been activated on a live WordPress site,
+so the actual wallet-extension connect/sign flow in a real browser hasn't been
+exercised end to end. If you're setting one up, please open issues for
+anything that doesn't work as documented.
 
 See [`CLAUDE.md`](CLAUDE.md) for a closer look at the internal architecture.
 

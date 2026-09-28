@@ -1,5 +1,5 @@
 import { getStarknet } from "get-starknet-core";
-import { RpcProvider, WalletAccount } from "starknet";
+import { RpcProvider, WalletAccount, stark } from "starknet";
 
 export async function connectWallet() {
   const wallets = await getStarknet().getAvailableWallets();
@@ -15,6 +15,11 @@ export async function connectWallet() {
     throw new Error("Wallet did not return an address.");
   }
   return { address: account.address, account };
+}
+
+export async function signTypedData(account, typedData) {
+  const signature = await account.signMessage(typedData);
+  return stark.signatureToHexArray(signature);
 }
 
 export async function executeCalls(account, calls) {

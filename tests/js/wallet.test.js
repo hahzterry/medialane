@@ -9,9 +9,10 @@ vi.mock("get-starknet-core", () => ({
 vi.mock("starknet", () => ({
   RpcProvider: class {},
   WalletAccount: { connect: (...args) => walletAccountConnect(...args) },
+  stark: { signatureToHexArray: (sig) => sig },
 }));
 
-const { connectWallet, executeCalls } = await import("../../assets/src/wallet.js");
+const { connectWallet, executeCalls, signTypedData } = await import("../../assets/src/wallet.js");
 
 describe("connectWallet", () => {
   beforeEach(() => {
@@ -40,6 +41,19 @@ describe("connectWallet", () => {
     getAvailableWallets.mockResolvedValue([{ id: "argentX" }]);
     walletAccountConnect.mockResolvedValue({ address: undefined });
     await expect(connectWallet()).rejects.toThrow("Wallet did not return an address.");
+  });
+});
+
+describe("signTypedData", () => {
+  it("signs the typed data and normalizes the signature to a hex array", async () => {
+    const signMessage = vi.fn().mockResolvedValue(["0x1", "0x2"]);
+    const account = { signMessage };
+    const typedData = { domain: {}, message: {} };
+
+    const signature = await signTypedData(account, typedData);
+
+    expect(signMessage).toHaveBeenCalledWith(typedData);
+    expect(signature).toEqual(["0x1", "0x2"]);
   });
 });
 

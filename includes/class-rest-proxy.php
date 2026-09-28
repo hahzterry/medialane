@@ -40,7 +40,7 @@ class RestProxy {
 		register_rest_route( self::NAMESPACE, '/collections/sync-tx', array(
 			'methods'             => 'POST',
 			'callback'            => function ( \WP_REST_Request $request ) {
-				return self::forward_json( $request, '/v1/collections/sync-tx' );
+				return self::forward_json( $request, '/v1/tx/sync' );
 			},
 			'permission_callback' => array( __CLASS__, 'check_permission' ),
 		) );

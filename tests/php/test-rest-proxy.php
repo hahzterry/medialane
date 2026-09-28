@@ -33,7 +33,9 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		$request  = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
 		$response = $this->server->dispatch( $request );
 
-		$this->assertSame( 401, $response->get_status() );
+		// WP's own rest_authorization_required_code() returns 403 for a
+		// logged-in-but-unauthorized user and reserves 401 for anonymous ones.
+		$this->assertSame( 403, $response->get_status() );
 	}
 
 	public function test_a_client_supplied_backend_path_cannot_redirect_the_forwarded_request() {
@@ -65,7 +67,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		$request  = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
 		$response = $this->server->dispatch( $request );
 
-		$this->assertSame( 401, $response->get_status() );
+		$this->assertSame( 403, $response->get_status() );
 	}
 
 	public function test_editor_with_the_capability_can_reach_tokenize_routes() {

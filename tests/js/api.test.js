@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMintIntent, getToken } from "../../assets/src/api.js";
+import { createMintIntent, getToken, buildSponsoredInvoke, executeSponsoredInvoke } from "../../assets/src/api.js";
 
 describe("api client", () => {
   beforeEach(() => {
@@ -23,5 +23,24 @@ describe("api client", () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: "not found" }) });
     const result = await getToken("0x1", "1");
     expect(result).toBeNull();
+  });
+
+  it("buildSponsoredInvoke posts to /paymaster/invoke/build", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { typedData: {} } }) });
+    await buildSponsoredInvoke({ userAddress: "0xabc", calls: [] });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/paymaster/invoke/build"),
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("executeSponsoredInvoke posts to /paymaster/invoke/execute", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { transactionHash: "0x1" } }) });
+    const body = await executeSponsoredInvoke({ userAddress: "0xabc", typedData: {}, signature: ["0x1"], calls: [] });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/paymaster/invoke/execute"),
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(body.data.transactionHash).toBe("0x1");
   });
 });

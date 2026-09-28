@@ -52,6 +52,14 @@ export function getCollectionsByOwner(owner) {
   return request(`/collections?owner=${encodeURIComponent(owner)}`, { method: "GET" });
 }
 
+export function buildSponsoredInvoke(params) {
+  return request("/paymaster/invoke/build", { method: "POST", body: JSON.stringify(params) });
+}
+
+export function executeSponsoredInvoke(params) {
+  return request("/paymaster/invoke/execute", { method: "POST", body: JSON.stringify(params) });
+}
+
 export async function getToken(contract, tokenId) {
   try {
     return await request(`/tokens/${contract}/${tokenId}`, { method: "GET" });

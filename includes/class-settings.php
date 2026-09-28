@@ -12,6 +12,7 @@ class Settings {
 	const OPTION_COLLECTION = 'medialane_collection_contract';
 	const OPTION_LICENSE_DEFAULT = 'medialane_license_default';
 	const OPTION_CONTENT_SCOPE   = 'medialane_content_scope'; // 'excerpt' | 'full'
+	const CAP_TOKENIZE = 'medialane_tokenize_posts';
 
 	public static function register() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
@@ -48,6 +49,13 @@ class Settings {
 		register_setting( 'medialane', self::OPTION_COLLECTION, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_address' ) ) );
 		register_setting( 'medialane', self::OPTION_LICENSE_DEFAULT, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'medialane', self::OPTION_CONTENT_SCOPE, array( 'sanitize_callback' => 'sanitize_text_field' ) );
+	}
+
+	public static function grant_default_capability() {
+		$role = get_role( 'administrator' );
+		if ( $role && ! $role->has_cap( self::CAP_TOKENIZE ) ) {
+			$role->add_cap( self::CAP_TOKENIZE );
+		}
 	}
 
 	public static function sanitize_address( $value ): string {

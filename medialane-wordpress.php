@@ -30,3 +30,5 @@ add_action( 'init', array( 'Medialane\\Settings', 'register' ) );
 add_action( 'init', array( 'Medialane\\Metabox', 'register' ) );
 add_action( 'init', array( 'Medialane\\BulkAction', 'register' ) );
 add_action( 'rest_api_init', array( 'Medialane\\RestProxy', 'register_routes' ) );
+
+register_activation_hook( __FILE__, array( 'Medialane\\Settings', 'grant_default_capability' ) );

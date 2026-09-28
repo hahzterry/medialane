@@ -21,4 +21,20 @@ class Test_Settings extends WP_UnitTestCase {
 		}
 		$this->assertSame( 'from-wp-config', Settings::get_api_key() );
 	}
+
+	public function test_grant_default_capability_adds_it_to_administrator() {
+		$admin_role = get_role( 'administrator' );
+		$admin_role->remove_cap( Settings::CAP_TOKENIZE );
+		$this->assertFalse( $admin_role->has_cap( Settings::CAP_TOKENIZE ) );
+
+		Settings::grant_default_capability();
+
+		$this->assertTrue( get_role( 'administrator' )->has_cap( Settings::CAP_TOKENIZE ) );
+	}
+
+	public function test_grant_default_capability_is_idempotent() {
+		Settings::grant_default_capability();
+		Settings::grant_default_capability();
+		$this->assertTrue( get_role( 'administrator' )->has_cap( Settings::CAP_TOKENIZE ) );
+	}
 }

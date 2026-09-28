@@ -1,5 +1,5 @@
-import { executeCalls } from "./wallet.js";
-import { uploadJson, createMintIntent } from "./api.js";
+import { signTypedData } from "./wallet.js";
+import { uploadJson, createMintIntent, buildSponsoredInvoke, executeSponsoredInvoke } from "./api.js";
 
 async function postJson(restUrl, nonce, path, body) {
   await fetch(`${restUrl}${path}`, {
@@ -9,48 +9,60 @@ async function postJson(restUrl, nonce, path, body) {
   });
 }
 
-export function markMinting(restUrl, nonce, postId) {
+function markMinting(restUrl, nonce, postId) {
   return postJson(restUrl, nonce, `/posts/${postId}/minting`, {});
 }
 
-export function markMinted(restUrl, nonce, postId, data) {
+function markMinted(restUrl, nonce, postId, data) {
   return postJson(restUrl, nonce, `/posts/${postId}/minted`, data);
 }
 
-export function markError(restUrl, nonce, postId, message) {
+function markError(restUrl, nonce, postId, message) {
   return postJson(restUrl, nonce, `/posts/${postId}/error`, { message });
 }
 
 /**
- * Uploads metadata, creates a mint intent, and executes it with the connected
- * wallet — the single mint sequence shared by the per-post metabox and the
- * Posts-list bulk action. Callers own connecting the wallet and reporting the
- * outcome (mark_error) on failure; this only marks "minting" and "minted".
+ * Uploads metadata and builds this post's mint calls. Does not touch the
+ * chain or post meta — callers batch these together before executing.
  */
-export async function tokenizeOne({ restUrl, nonce, postId, collectionContract, title, body, image, license, account, address }) {
-  if (!collectionContract) {
-    throw new Error("No collection configured. Connect a wallet in Medialane Settings first.");
-  }
-
-  await markMinting(restUrl, nonce, postId);
-
+export async function prepareMint({ postId, title, body, image, license, address, collectionContract }) {
   const metaRes = await uploadJson({ name: title, description: body, image: image || undefined, license });
-  const tokenUri = metaRes.data.url;
-
   const intentRes = await createMintIntent({
     owner: address,
     collectionId: collectionContract,
     recipient: address,
-    tokenUri,
+    tokenUri: metaRes.data.url,
     royaltyBps: 0,
   });
-  const txHash = await executeCalls(account, intentRes.data.calls);
+  return { postId, license, calls: intentRes.data.calls };
+}
 
-  // tokenId is intentionally not resolved client-side: mip-erc721 assigns it
-  // on-chain during execution and medialane-starknet's own mint flow doesn't
-  // read it back either — the tx hash is the authoritative reference; the
-  // indexer backfills the token row asynchronously.
-  await markMinted(restUrl, nonce, postId, { tokenId: "", txHash, contract: collectionContract, license });
+/**
+ * Signs and executes one sponsored transaction covering every entry's calls,
+ * then marks each post minted with the shared tx hash (or errored, if the
+ * whole batch failed — it's one on-chain transaction, so it succeeds or
+ * fails together).
+ */
+export async function executeMintBatch({ restUrl, nonce, account, address, collectionContract, entries }) {
+  if (!collectionContract) {
+    throw new Error("No collection configured. Connect a wallet in Medialane Settings first.");
+  }
+  await Promise.all(entries.map((e) => markMinting(restUrl, nonce, e.postId)));
 
-  return txHash;
+  const calls = entries.flatMap((e) => e.calls);
+  try {
+    const buildRes = await buildSponsoredInvoke({ userAddress: address, calls });
+    const signature = await signTypedData(account, buildRes.data.typedData);
+    const execRes = await executeSponsoredInvoke({ userAddress: address, typedData: buildRes.data.typedData, signature, calls });
+    const txHash = execRes.data.transactionHash;
+
+    await Promise.all(entries.map((e) =>
+      markMinted(restUrl, nonce, e.postId, { tokenId: "", txHash, contract: collectionContract, license: e.license })
+    ));
+    return entries.map((e) => ({ postId: e.postId, txHash }));
+  } catch (err) {
+    const message = err.message || "Something went wrong";
+    await Promise.all(entries.map((e) => markError(restUrl, nonce, e.postId, message)));
+    return entries.map((e) => ({ postId: e.postId, error: message }));
+  }
 }

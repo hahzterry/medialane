@@ -4,6 +4,7 @@ import { tokenizePost } from "../../assets/src/metabox.js";
 vi.mock("../../assets/src/wallet.js", () => ({
   connectWallet: vi.fn().mockResolvedValue({ address: "0xabc", account: {} }),
   signTypedData: vi.fn().mockResolvedValue(["0x1", "0x2"]),
+  waitForConfirmation: vi.fn().mockResolvedValue({ isReverted: () => false }),
 }));
 vi.mock("../../assets/src/api.js", () => ({
   uploadJson: vi.fn().mockResolvedValue({ data: { url: "ipfs://meta" } }),

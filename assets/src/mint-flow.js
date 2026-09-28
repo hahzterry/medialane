@@ -1,4 +1,4 @@
-import { signTypedData } from "./wallet.js";
+import { signTypedData, waitForConfirmation } from "./wallet.js";
 import { uploadJson, createMintIntent, buildSponsoredInvoke, executeSponsoredInvoke } from "./api.js";
 
 async function postJson(restUrl, nonce, path, body) {
@@ -47,6 +47,10 @@ export async function executeMintBatch({ restUrl, nonce, account, address, colle
     const signature = await signTypedData(account, buildRes.data.typedData);
     const execRes = await executeSponsoredInvoke({ userAddress: address, typedData: buildRes.data.typedData, signature, calls });
     const txHash = execRes.data.transactionHash;
+
+    // The paymaster returning a tx hash means it was broadcast, not that it
+    // landed or succeeded. Only mark posts minted once the chain confirms it.
+    await waitForConfirmation(txHash);
 
     await Promise.all(entries.map((e) =>
       markMinted(restUrl, nonce, e.postId, { tokenId: "", txHash, contract: collectionContract, license: e.license })

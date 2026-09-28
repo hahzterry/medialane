@@ -12,7 +12,7 @@ vi.mock("starknet", () => ({
   stark: { signatureToHexArray: (sig) => sig },
 }));
 
-const { connectWallet, executeCalls, signTypedData } = await import("../../assets/src/wallet.js");
+const { connectWallet, executeCalls, signTypedData, waitForConfirmation } = await import("../../assets/src/wallet.js");
 
 describe("connectWallet", () => {
   beforeEach(() => {
@@ -57,6 +57,20 @@ describe("signTypedData", () => {
   });
 });
 
+describe("waitForConfirmation", () => {
+  it("returns the receipt when the transaction succeeds", async () => {
+    const receipt = { isReverted: () => false };
+    const provider = { waitForTransaction: vi.fn().mockResolvedValue(receipt) };
+    await expect(waitForConfirmation("0x123", provider)).resolves.toBe(receipt);
+  });
+
+  it("throws when the transaction reverted, even though it has a tx hash", async () => {
+    const receipt = { isReverted: () => true, value: { revert_reason: "insufficient balance" } };
+    const provider = { waitForTransaction: vi.fn().mockResolvedValue(receipt) };
+    await expect(waitForConfirmation("0x123", provider)).rejects.toThrow("insufficient balance");
+  });
+});
+
 describe("executeCalls", () => {
   it("throws when calls array is empty", async () => {
     const account = { execute: vi.fn() };
@@ -64,7 +78,7 @@ describe("executeCalls", () => {
   });
 
   it("executes calls and waits for confirmation", async () => {
-    const waitForTransaction = vi.fn().mockResolvedValue(undefined);
+    const waitForTransaction = vi.fn().mockResolvedValue({ isReverted: () => false });
     const account = {
       execute: vi.fn().mockResolvedValue({ transaction_hash: "0x123" }),
       channel: { provider: { waitForTransaction } },
@@ -72,5 +86,15 @@ describe("executeCalls", () => {
     const txHash = await executeCalls(account, [{ contractAddress: "0x1", entrypoint: "mint", calldata: [] }]);
     expect(txHash).toBe("0x123");
     expect(waitForTransaction).toHaveBeenCalledWith("0x123");
+  });
+
+  it("throws when the transaction reverts, instead of returning a hash", async () => {
+    const waitForTransaction = vi.fn().mockResolvedValue({ isReverted: () => true, value: { revert_reason: "execution failed" } });
+    const account = {
+      execute: vi.fn().mockResolvedValue({ transaction_hash: "0x123" }),
+      channel: { provider: { waitForTransaction } },
+    };
+    await expect(executeCalls(account, [{ contractAddress: "0x1", entrypoint: "mint", calldata: [] }]))
+      .rejects.toThrow("execution failed");
   });
 });

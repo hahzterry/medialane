@@ -37,4 +37,14 @@ class Test_Settings extends WP_UnitTestCase {
 		Settings::grant_default_capability();
 		$this->assertTrue( get_role( 'administrator' )->has_cap( Settings::CAP_TOKENIZE ) );
 	}
+
+	public function test_save_editor_access_grants_and_revokes_the_editor_role() {
+		Settings::save_editor_access( true );
+		$this->assertTrue( get_role( 'editor' )->has_cap( Settings::CAP_TOKENIZE ) );
+		$this->assertTrue( Settings::editor_access_enabled() );
+
+		Settings::save_editor_access( false );
+		$this->assertFalse( get_role( 'editor' )->has_cap( Settings::CAP_TOKENIZE ) );
+		$this->assertFalse( Settings::editor_access_enabled() );
+	}
 }

@@ -3,11 +3,13 @@ import { tokenizePost } from "../../assets/src/metabox.js";
 
 vi.mock("../../assets/src/wallet.js", () => ({
   connectWallet: vi.fn().mockResolvedValue({ address: "0xabc", account: {} }),
-  executeCalls: vi.fn().mockResolvedValue("0xtx"),
+  signTypedData: vi.fn().mockResolvedValue(["0x1", "0x2"]),
 }));
 vi.mock("../../assets/src/api.js", () => ({
   uploadJson: vi.fn().mockResolvedValue({ data: { url: "ipfs://meta" } }),
   createMintIntent: vi.fn().mockResolvedValue({ data: { calls: [{ contractAddress: "0x1" }] } }),
+  buildSponsoredInvoke: vi.fn().mockResolvedValue({ data: { typedData: { message: { calls: [] } } } }),
+  executeSponsoredInvoke: vi.fn().mockResolvedValue({ data: { transactionHash: "0xtx" } }),
 }));
 
 describe("tokenizePost", () => {

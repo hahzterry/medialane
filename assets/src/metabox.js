@@ -1,5 +1,5 @@
 import { connectWallet } from "./wallet.js";
-import { tokenizeOne, markError } from "./mint-flow.js";
+import { prepareMint, executeMintBatch } from "./mint-flow.js";
 
 export async function tokenizePost(postId) {
   const data = window.medialaneData;
@@ -11,18 +11,18 @@ export async function tokenizePost(postId) {
   const { address, account } = await connectWallet();
   const body = data.contentScope === "full" ? data.postContent : data.postExcerpt;
 
-  return tokenizeOne({
-    restUrl: data.restUrl,
-    nonce: data.nonce,
-    postId,
+  const entry = await prepareMint({
+    postId, title: data.postTitle, body, image: data.featuredImageUrl, license, address,
     collectionContract: data.collectionContract,
-    title: data.postTitle,
-    body,
-    image: data.featuredImageUrl,
-    license,
-    account,
-    address,
   });
+  const [result] = await executeMintBatch({
+    restUrl: data.restUrl, nonce: data.nonce, account, address,
+    collectionContract: data.collectionContract, entries: [entry],
+  });
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result.txHash;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -36,8 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
       await tokenizePost(postId);
       location.reload();
     } catch (err) {
-      const data = window.medialaneData;
-      await markError(data.restUrl, data.nonce, postId, err.message || "Something went wrong");
       btn.disabled = false;
       btn.textContent = "Tokenize Post";
       alert(err.message || "Something went wrong");

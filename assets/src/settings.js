@@ -1,23 +1,16 @@
 import { connectWallet, executeCalls } from "./wallet.js";
-import { createCollectionIntent, syncCollectionTx } from "./api.js";
-
-async function saveCollectionContract(contract) {
-  await fetch(`${window.medialaneData.restUrl}/settings/collection`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-WP-Nonce": window.medialaneData.nonce },
-    body: JSON.stringify({ contract }),
-  });
-}
+import { createCollectionIntent, syncCollectionTx, saveCollectionContract, getCollectionsByOwner } from "./api.js";
 
 export async function pollForCollection(owner, attempts = 10) {
   for (let i = 0; i < attempts; i++) {
-    const res = await fetch(`${window.medialaneData.restUrl}/collections?owner=${owner}`, {
-      headers: { "X-WP-Nonce": window.medialaneData.nonce },
-    });
-    const body = await res.json().catch(() => ({}));
-    const list = (body.data && body.data.items) || body.data || [];
-    if (Array.isArray(list) && list.length > 0) {
-      return list[0].contract || list[0].address;
+    try {
+      const body = await getCollectionsByOwner(owner);
+      const list = (body.data && body.data.items) || body.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        return list[0].contract || list[0].address;
+      }
+    } catch {
+      // Not indexed yet, or a transient error — keep polling until attempts run out.
     }
     await new Promise((r) => setTimeout(r, 3000));
   }
@@ -44,7 +37,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         const calls = intentRes.data && intentRes.data.calls;
         const txHash = await executeCalls(account, calls);
-        await syncCollectionTx(txHash).catch(() => {});
+        // Best-effort: pollForCollection below still succeeds via the indexer's own
+        // polling if this eager sync fails, just slower — but a silently-swallowed
+        // failure here once hid a real broken-route bug for a while, so log it.
+        await syncCollectionTx(txHash).catch((err) => console.warn("Medialane: eager tx sync failed", err));
 
         button.textContent = "Confirming collection…";
         const contract = await pollForCollection(address);

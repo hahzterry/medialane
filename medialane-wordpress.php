@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'MEDIALANE_PLUGIN_VERSION', '0.1.0' );
 define( 'MEDIALANE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MEDIALANE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'MEDIALANE_BACKEND_URL', 'https://medialane-backend-production.up.railway.app' );
+define( 'MEDIALANE_BACKEND_URL', 'https://api.medialane.io' );
 
 require_once MEDIALANE_PLUGIN_DIR . 'includes/class-post-meta.php';
 require_once MEDIALANE_PLUGIN_DIR . 'includes/class-settings.php';

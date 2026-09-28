@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "get-starknet-core": "^4.0.0",
-    "starknet": "^6.11.0"
+    "starknet": "^10.8.0"
   },
   "devDependencies": {
     "esbuild": "^0.21.0",

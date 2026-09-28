@@ -9,7 +9,7 @@ await esbuild.build({
   bundle: true,
   outdir: "assets/dist",
   format: "iife",
-  target: "es2019",
+  target: "es2020", // starknet's @scure/starknet dep uses BigInt literals, which es2019 predates
   sourcemap: true,
   minify: true,
 });

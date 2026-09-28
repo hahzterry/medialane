@@ -21,10 +21,7 @@ function markError(restUrl, nonce, postId, message) {
   return postJson(restUrl, nonce, `/posts/${postId}/error`, { message });
 }
 
-/**
- * Uploads metadata and builds this post's mint calls. Does not touch the
- * chain or post meta — callers batch these together before executing.
- */
+// Does not touch the chain or post meta — callers batch these together before executing.
 export async function prepareMint({ postId, title, body, image, license, address, collectionContract }) {
   const metaRes = await uploadJson({ name: title, description: body, image: image || undefined, license });
   const intentRes = await createMintIntent({
@@ -37,12 +34,7 @@ export async function prepareMint({ postId, title, body, image, license, address
   return { postId, license, calls: intentRes.data.calls };
 }
 
-/**
- * Signs and executes one sponsored transaction covering every entry's calls,
- * then marks each post minted with the shared tx hash (or errored, if the
- * whole batch failed — it's one on-chain transaction, so it succeeds or
- * fails together).
- */
+// One on-chain transaction covers every entry, so they succeed or fail together.
 export async function executeMintBatch({ restUrl, nonce, account, address, collectionContract, entries }) {
   if (!collectionContract) {
     throw new Error("No collection configured. Connect a wallet in Medialane Settings first.");

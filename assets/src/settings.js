@@ -38,8 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const calls = intentRes.data && intentRes.data.calls;
         const txHash = await executeCalls(account, calls);
         // Best-effort: pollForCollection below still succeeds via the indexer's own
-        // polling if this eager sync fails, just slower — but a silently-swallowed
-        // failure here once hid a real broken-route bug for a while, so log it.
+        // polling if this eager sync fails, just slower.
         await syncCollectionTx(txHash).catch((err) => console.warn("Medialane: eager tx sync failed", err));
 
         button.textContent = "Confirming collection…";

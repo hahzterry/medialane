@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { tokenizeBulk } from "../../assets/src/bulk-action.js";
+import { tokenizeBulk, buildStatusPanel } from "../../assets/src/bulk-action.js";
 
 vi.mock("../../assets/src/wallet.js", () => ({
   connectWallet: vi.fn().mockResolvedValue({ address: "0xabc", account: {} }),
@@ -48,5 +48,22 @@ describe("tokenizeBulk", () => {
     await tokenizeBulk(postIds, () => {});
 
     expect(executeSponsoredInvoke).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("buildStatusPanel", () => {
+  it("lists every post and updates its row as progress comes in", () => {
+    const data = { posts: { 1: { title: "A" }, 2: { title: "B" } } };
+    const panel = buildStatusPanel(["1", "2"], data);
+
+    const rows = panel.element.querySelectorAll("li");
+    expect(rows[0].textContent).toBe("A — Waiting…");
+    expect(rows[1].textContent).toBe("B — Waiting…");
+
+    panel.update("1", "minting");
+    expect(rows[0].textContent).toBe("A — Signing & minting…");
+
+    panel.update("2", "error", "Something went wrong");
+    expect(rows[1].textContent).toBe("B — Failed: Something went wrong");
   });
 });

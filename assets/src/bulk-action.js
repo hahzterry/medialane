@@ -38,12 +38,67 @@ export async function tokenizeBulk(postIds, onProgress) {
   }
 }
 
+const STATUS_LABEL = {
+  preparing: "Preparing…",
+  minting: "Signing & minting…",
+  minted: "Minted",
+  error: "Failed",
+};
+
+export function buildStatusPanel(postIds, data) {
+  const panel = document.createElement("div");
+  panel.id = "medialane-bulk-status";
+  panel.className = "notice notice-info";
+  panel.style.padding = "12px 16px";
+
+  const heading = document.createElement("p");
+  heading.innerHTML = `<strong>Tokenizing ${postIds.length} post${postIds.length === 1 ? "" : "s"} with Medialane…</strong> You'll sign once for the whole batch.`;
+  panel.appendChild(heading);
+
+  const list = document.createElement("ul");
+  list.style.margin = "8px 0 0";
+  const rows = {};
+  for (const postId of postIds) {
+    const post = data.posts[postId];
+    const row = document.createElement("li");
+    row.textContent = `${post ? post.title : `#${postId}`} — Waiting…`;
+    list.appendChild(row);
+    rows[postId] = row;
+  }
+  panel.appendChild(list);
+
+  return {
+    element: panel,
+    update(postId, status, message) {
+      const row = rows[postId];
+      if (!row) return;
+      const post = data.posts[postId];
+      const title = post ? post.title : `#${postId}`;
+      const label = STATUS_LABEL[status] || status;
+      row.textContent = `${title} — ${label}${message ? `: ${message}` : ""}`;
+    },
+  };
+}
+
 document.addEventListener("submit", (e) => {
   const form = e.target.closest && e.target.closest("#posts-filter");
   if (!form) return;
   const select = form.querySelector('select[name="action"], select[name="action2"]');
   if (!select || select.value !== "medialane_tokenize") return;
   e.preventDefault();
+
   const ids = Array.from(form.querySelectorAll('input[name="post[]"]:checked')).map((el) => el.value);
-  tokenizeBulk(ids, (id, status) => console.log(`post ${id}: ${status}`)).then(() => location.reload());
+  if (ids.length === 0) return;
+  if (!confirm(`Tokenize ${ids.length} post${ids.length === 1 ? "" : "s"} on Medialane? This mints them on-chain and can't be undone.`)) {
+    return;
+  }
+
+  const data = window.medialaneData;
+  const status = buildStatusPanel(ids, data);
+  const heading = document.querySelector(".wp-heading-inline") || document.querySelector(".wrap h1");
+  if (heading && heading.parentNode) {
+    heading.parentNode.insertBefore(status.element, heading.nextSibling);
+  }
+
+  tokenizeBulk(ids, (id, s, message) => status.update(id, s, message)).then(() => location.reload());
 });

@@ -58,6 +58,20 @@ class RestProxy {
 			},
 			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
 		) );
+		register_rest_route( self::NAMESPACE, '/paymaster/deploy/build', array(
+			'methods'             => 'POST',
+			'callback'            => function ( \WP_REST_Request $request ) {
+				return self::forward_json( $request, '/v1/paymaster/deploy/build' );
+			},
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
+		) );
+		register_rest_route( self::NAMESPACE, '/business/provisioning', array(
+			'methods'             => 'POST',
+			'callback'            => function ( \WP_REST_Request $request ) {
+				return self::forward_json( $request, '/v1/business/provisioning' );
+			},
+			'permission_callback' => array( __CLASS__, 'check_tokenize_permission' ),
+		) );
 		register_rest_route( self::NAMESPACE, '/tokens/(?P<contract>[a-zA-Z0-9x]+)/(?P<tokenId>[a-zA-Z0-9]+)', array(
 			'methods'             => 'GET',
 			'callback'            => array( __CLASS__, 'forward_get_token' ),

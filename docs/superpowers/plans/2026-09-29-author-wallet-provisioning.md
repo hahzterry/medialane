@@ -47,7 +47,7 @@
 **Interfaces:**
 - Produces: `generateInterimKeypair(): { privateKey: string, publicKey: string, address: string }` and `signDeploymentWithInterimKey(privateKey: string, address: string, typedData: unknown): Promise<string[]>`, both used only by `prepareMint()` (Task 4).
 
-- [ ] **Step 1: Add the dependency**
+- [x] **Step 1: Add the dependency**
 
 ```bash
 npm install @medialane/sdk
@@ -55,7 +55,7 @@ npm install @medialane/sdk
 
 Run: `grep '"@medialane/sdk"' package.json` to confirm it landed in `dependencies`, not `devDependencies` — this code runs in the browser bundle, not just at build time.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 ```js
 // tests/js/wallet.test.js — add to the existing vi.mock("starknet", ...) the pieces this needs:
@@ -105,12 +105,12 @@ describe("signDeploymentWithInterimKey", () => {
 });
 ```
 
-- [ ] **Step 3: Run to verify it fails**
+- [x] **Step 3: Run to verify it fails**
 
 Run: `npm test -- wallet`
 Expected: FAIL — `generateInterimKeypair`/`signDeploymentWithInterimKey` are not exported yet.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 In `assets/src/wallet.js`, update the imports and add both functions:
 
@@ -140,12 +140,12 @@ export async function signDeploymentWithInterimKey(privateKey, address, typedDat
 
 (The plan's Step 2 test mock returns a plain array from `signMessage`, and `signatureToHexArray` in the real `starknet` package accepts and normalizes that shape, matching how `signTypedData()` already uses it above.)
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `npm test -- wallet`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add package.json package-lock.json assets/src/wallet.js tests/js/wallet.test.js
@@ -163,7 +163,7 @@ git commit -m "feat: add interim-keypair generation and deployment signing to wa
 **Interfaces:**
 - Produces: `POST /medialane/v1/paymaster/deploy/build` → forwards to `/v1/paymaster/deploy/build`; `POST /medialane/v1/business/provisioning` → forwards to `/v1/business/provisioning`. Both use `check_tokenize_permission` and `forward_json()`, following the exact pattern of the existing `/paymaster/invoke/*` routes.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 public function test_deploy_build_and_provisioning_routes_forward_to_the_fixed_backend_path() {
@@ -184,12 +184,12 @@ public function test_deploy_build_and_provisioning_routes_forward_to_the_fixed_b
 }
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `phpunit -c phpunit.xml.dist --filter test_deploy_build_and_provisioning_routes_forward_to_the_fixed_backend_path`
 Expected: FAIL — 404, routes don't exist yet.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `register_routes()` in `includes/class-rest-proxy.php`, alongside the other `forward_json`-backed routes:
 
@@ -210,12 +210,12 @@ register_rest_route( self::NAMESPACE, '/business/provisioning', array(
 ) );
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `phpunit -c phpunit.xml.dist --filter Test_Rest_Proxy`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add includes/class-rest-proxy.php tests/php/test-rest-proxy.php
@@ -233,7 +233,7 @@ git commit -m "feat: add REST proxy routes for paymaster deploy/build and busine
 **Interfaces:**
 - Produces: `buildSponsoredDeploy({ ownerPubkey, ownerAddress }): Promise<{ data: { typedData, deployment, calls } }>` and `provisionRecipientWallet({ recipientScheme, recipientValue, interimOwnerPubkey, derivationSalt, deployment }): Promise<{ data: { walletAddress: string, status: string } }>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```js
 it("buildSponsoredDeploy posts to /paymaster/deploy/build", async () => {
@@ -262,12 +262,12 @@ it("provisionRecipientWallet posts to /business/provisioning", async () => {
 
 Add `buildSponsoredDeploy, provisionRecipientWallet` to the existing import line at the top of `tests/js/api.test.js`.
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npm test -- api`
 Expected: FAIL — neither function exists.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `assets/src/api.js`:
 
@@ -281,12 +281,12 @@ export function provisionRecipientWallet(params) {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npm test -- api`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add assets/src/api.js tests/js/api.test.js
@@ -307,7 +307,7 @@ git commit -m "feat: add buildSponsoredDeploy/provisionRecipientWallet to api.js
 - Consumes: `generateInterimKeypair`, `signDeploymentWithInterimKey` (Task 1); `buildSponsoredDeploy`, `provisionRecipientWallet` (Task 3).
 - Produces: `prepareMint()`'s signature grows one required field, `authorEmail`. Its `recipient` is now the provisioned wallet's address, not the caller's own `address`. `owner` stays `address` (the signer, proving collection ownership on-chain per the verified `buildMintIntent` behavior).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Update the mocks at the top of `tests/js/mint-flow.test.js`:
 
@@ -351,12 +351,12 @@ describe("prepareMint", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npm test -- mint-flow`
 Expected: FAIL — `prepareMint` still mints to `address` and never calls `provisionRecipientWallet`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `assets/src/mint-flow.js`, update the imports and `prepareMint`:
 
@@ -402,12 +402,12 @@ export async function prepareMint({ postId, title, body, image, license, address
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npm test -- mint-flow`
 Expected: PASS
 
-- [ ] **Step 5: Pass the author's email through from PHP**
+- [x] **Step 5: Pass the author's email through from PHP**
 
 In `includes/class-metabox.php`'s `enqueue()`, add to the `wp_localize_script` array:
 
@@ -421,18 +421,18 @@ In `includes/class-bulk-action.php`'s `enqueue()`, add to each post's summary:
 'authorEmail' => get_the_author_meta( 'user_email', $p->post_author ),
 ```
 
-- [ ] **Step 6: Wire the new field through metabox.js and bulk-action.js**
+- [x] **Step 6: Wire the new field through metabox.js and bulk-action.js**
 
 In `assets/src/metabox.js`, add `authorEmail: data.authorEmail` to the `prepareMint()` call in `tokenizePost`.
 
 In `assets/src/bulk-action.js`, add `authorEmail: post.authorEmail` to the `prepareMint()` call inside `tokenizeBulk`'s loop.
 
-- [ ] **Step 7: Run the full JS suite and rebuild**
+- [x] **Step 7: Run the full JS suite and rebuild**
 
 Run: `npm test && npm run build`
 Expected: All tests pass; build succeeds.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add assets/src/mint-flow.js assets/src/metabox.js assets/src/bulk-action.js includes/class-metabox.php includes/class-bulk-action.php tests/js/mint-flow.test.js assets/dist
@@ -443,8 +443,8 @@ git commit -m "feat: mint to the post author's provisioned wallet, not the signe
 
 ## Final Verification
 
-- [ ] Run the complete JS suite: `npm run build && npm test` — expect all passing.
-- [ ] Run the complete PHP suite: `WP_TESTS_DIR=/tmp/wordpress-tests-lib WP_TESTS_PHPUNIT_POLYFILLS_PATH=<path> phpunit -c phpunit.xml.dist` — expect all passing.
-- [ ] Update `CLAUDE.md`'s Architecture section with the provisioning flow (this is exactly the kind of non-obvious mechanism that doc exists to capture — see its own guidance on what belongs there).
+- [x] Run the complete JS suite: `npm run build && npm test` — expect all passing.
+- [x] Run the complete PHP suite: `WP_TESTS_DIR=/tmp/wordpress-tests-lib WP_TESTS_PHPUNIT_POLYFILLS_PATH=<path> phpunit -c phpunit.xml.dist` — expect all passing.
+- [x] Update `CLAUDE.md`'s Architecture section with the provisioning flow (this is exactly the kind of non-obvious mechanism that doc exists to capture — see its own guidance on what belongs there).
 - [ ] Manually verify on a real WordPress install with a real wallet extension: tokenize a post as one WP user, confirm the resulting token's on-chain owner is a *different* address than the admin's own connected wallet, and that address resolves back to the author's registered email via `medialane-backend`'s own identity lookup.
 - [ ] Confirm the case where the same author's email already has a wallet (a second post from the same author) reuses it instead of deploying a new one each time — `business-provisioning`'s own `findExistingWalletForRecipient` should handle this, but it's worth confirming against the real backend rather than trusting the read.

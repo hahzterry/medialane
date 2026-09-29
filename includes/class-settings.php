@@ -10,7 +10,7 @@ class Settings {
 	const OPTION_API_KEY    = 'medialane_api_key';
 	const OPTION_WALLET     = 'medialane_wallet_address';
 	const OPTION_COLLECTION = 'medialane_collection_contract';
-	const OPTION_COLLECTIONS = 'medialane_collections';
+	const OPTION_COLLECTION_LABELS = 'medialane_collection_labels';
 	const OPTION_CATEGORY_MAP = 'medialane_category_collections';
 	const OPTION_LICENSE_DEFAULT = 'medialane_license_default';
 	const OPTION_AI_POLICY_DEFAULT = 'medialane_ai_policy_default';
@@ -54,8 +54,6 @@ class Settings {
 
 	public static function register_settings() {
 		register_setting( 'medialane', self::OPTION_API_KEY, array( 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'medialane', self::OPTION_WALLET, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_address' ) ) );
-		register_setting( 'medialane', self::OPTION_COLLECTION, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_address' ) ) );
 		register_setting( 'medialane', self::OPTION_LICENSE_DEFAULT, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'medialane', self::OPTION_AI_POLICY_DEFAULT, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'medialane', self::OPTION_CONTENT_SCOPE, array( 'sanitize_callback' => 'sanitize_text_field' ) );
@@ -84,6 +82,10 @@ class Settings {
 		return (string) get_option( self::OPTION_WALLET, '' );
 	}
 
+	public static function save_wallet_address( string $address ) {
+		update_option( self::OPTION_WALLET, self::sanitize_address( $address ) );
+	}
+
 	public static function get_collection_contract(): string {
 		return (string) get_option( self::OPTION_COLLECTION, '' );
 	}
@@ -100,33 +102,66 @@ class Settings {
 		self::save_collection_contract( $address );
 	}
 
-	public static function get_collections(): array {
-		$collections = get_option( self::OPTION_COLLECTIONS, array() );
-		return is_array( $collections ) ? $collections : array();
+	// Labels are the only thing about a collection this plugin is entitled to
+	// remember locally — a name has no on-chain meaning. Whether a collection
+	// actually exists is never decided from this option; see
+	// fetch_live_collections().
+	public static function get_collection_labels(): array {
+		$labels = get_option( self::OPTION_COLLECTION_LABELS, array() );
+		return is_array( $labels ) ? $labels : array();
 	}
 
-	public static function add_collection( string $contract, string $label ) {
-		$contract    = self::sanitize_address( $contract );
-		$label       = sanitize_text_field( $label );
-		$collections = self::get_collections();
+	public static function save_collection_label( string $contract, string $label ) {
+		$contract = self::sanitize_address( $contract );
+		$label    = sanitize_text_field( $label );
+		$labels   = self::get_collection_labels();
 
-		$existing_index = null;
-		foreach ( $collections as $i => $entry ) {
-			if ( $entry['contract'] === $contract ) {
-				$existing_index = $i;
-				break;
-			}
-		}
-		if ( null !== $existing_index ) {
-			$collections[ $existing_index ]['label'] = $label;
-		} else {
-			$collections[] = array( 'contract' => $contract, 'label' => $label );
-		}
-		update_option( self::OPTION_COLLECTIONS, $collections );
+		$labels[ $contract ] = $label;
+		update_option( self::OPTION_COLLECTION_LABELS, $labels );
 
 		if ( ! self::get_default_collection() ) {
 			self::set_default_collection( $contract );
 		}
+	}
+
+	// The chain, via medialane-backend's indexer, is the only authority on
+	// which collections actually exist for this site's wallet. This never
+	// reads from OPTION_COLLECTION_LABELS to decide existence — only to
+	// attach a friendly name to a contract the backend already confirmed.
+	public static function fetch_live_collections(): array {
+		$key   = self::get_api_key();
+		$owner = self::get_wallet_address();
+		if ( ! $key || ! $owner ) {
+			return array();
+		}
+
+		$response = wp_remote_get( MEDIALANE_BACKEND_URL . '/v1/collections?owner=' . rawurlencode( $owner ), array(
+			'headers' => array( 'x-api-key' => $key ),
+			'timeout' => 15,
+		) );
+		if ( is_wp_error( $response ) ) {
+			return array();
+		}
+		$status = wp_remote_retrieve_response_code( $response );
+		if ( $status < 200 || $status >= 300 ) {
+			return array();
+		}
+		$body  = json_decode( wp_remote_retrieve_body( $response ), true );
+		$items = ( is_array( $body ) && isset( $body['data'] ) && is_array( $body['data'] ) ) ? $body['data'] : array();
+
+		$labels      = self::get_collection_labels();
+		$collections = array();
+		foreach ( $items as $item ) {
+			if ( empty( $item['contractAddress'] ) ) {
+				continue;
+			}
+			$contract      = (string) $item['contractAddress'];
+			$collections[] = array(
+				'contract' => $contract,
+				'label'    => isset( $labels[ $contract ] ) ? $labels[ $contract ] : $contract,
+			);
+		}
+		return $collections;
 	}
 
 	public static function get_category_map(): array {
@@ -145,17 +180,28 @@ class Settings {
 		update_option( self::OPTION_CATEGORY_MAP, $sanitized );
 	}
 
-	public static function resolve_collection_for_post( int $post_id ): string {
+	// $live_collections must come from fetch_live_collections() — a category
+	// mapping or stored default pointing at a contract that isn't in that
+	// list (deleted, renamed, never real) is never trusted.
+	public static function resolve_collection_for_post( int $post_id, array $live_collections ): string {
+		$valid = wp_list_pluck( $live_collections, 'contract' );
+
 		$map = self::get_category_map();
 		if ( $map ) {
 			$categories = get_the_category( $post_id );
 			foreach ( $categories as $category ) {
-				if ( isset( $map[ $category->term_id ] ) ) {
+				if ( isset( $map[ $category->term_id ] ) && in_array( $map[ $category->term_id ], $valid, true ) ) {
 					return $map[ $category->term_id ];
 				}
 			}
 		}
-		return self::get_default_collection();
+
+		$default = self::get_default_collection();
+		if ( in_array( $default, $valid, true ) ) {
+			return $default;
+		}
+
+		return $valid ? $valid[0] : '';
 	}
 
 	public static function get_content_scope(): string {
@@ -177,6 +223,8 @@ class Settings {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+		$api_key_set       = (bool) self::get_api_key();
+		$wallet_connected  = (bool) self::get_wallet_address();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Medialane Settings', 'medialane' ); ?></h1>
@@ -199,6 +247,34 @@ class Settings {
 						<th><label for="medialane_api_key"><?php esc_html_e( 'API Key', 'medialane' ); ?></label></th>
 						<td><input type="password" id="medialane_api_key" name="<?php echo esc_attr( self::OPTION_API_KEY ); ?>" value="<?php echo esc_attr( self::get_api_key() ); ?>" class="regular-text" autocomplete="off" /></td>
 					</tr>
+				</table>
+				<?php submit_button( __( 'Save API Key', 'medialane' ) ); ?>
+			</form>
+
+			<?php if ( ! $api_key_set ) : ?>
+				<p class="description"><?php esc_html_e( 'Add your API key and save it to continue setup.', 'medialane' ); ?></p>
+				</div>
+				<?php
+				return;
+			endif;
+			?>
+
+			<h2><?php esc_html_e( 'Wallet', 'medialane' ); ?></h2>
+			<p><strong><?php esc_html_e( 'Wallet:', 'medialane' ); ?></strong> <span id="medialane-wallet-status"><?php echo esc_html( self::get_wallet_address() ? self::get_wallet_address() : __( 'Not connected', 'medialane' ) ); ?></span></p>
+			<p><button type="button" id="medialane-connect-wallet" class="button"><?php esc_html_e( 'Connect Wallet', 'medialane' ); ?></button></p>
+
+			<?php if ( ! $wallet_connected ) : ?>
+				<p class="description"><?php esc_html_e( 'Connect the wallet that will sign every tokenize action on this site to continue setup.', 'medialane' ); ?></p>
+				</div>
+				<?php
+				return;
+			endif;
+			?>
+
+			<h2><?php esc_html_e( 'Tokenization defaults', 'medialane' ); ?></h2>
+			<form method="post" action="options.php">
+				<?php settings_fields( 'medialane' ); ?>
+				<table class="form-table">
 					<tr>
 						<th><label for="medialane_content_scope"><?php esc_html_e( 'Post content to tokenize', 'medialane' ); ?></label></th>
 						<td>
@@ -231,13 +307,10 @@ class Settings {
 						</td>
 					</tr>
 				</table>
-				<p><strong><?php esc_html_e( 'Wallet:', 'medialane' ); ?></strong> <span id="medialane-wallet-status"><?php echo esc_html( self::get_wallet_address() ? self::get_wallet_address() : __( 'Not connected', 'medialane' ) ); ?></span></p>
-				<p><button type="button" id="medialane-connect-wallet" class="button"><?php esc_html_e( 'Connect Wallet', 'medialane' ); ?></button></p>
-				<input type="hidden" id="medialane_wallet_address" name="<?php echo esc_attr( self::OPTION_WALLET ); ?>" value="<?php echo esc_attr( self::get_wallet_address() ); ?>" />
 				<?php submit_button(); ?>
 			</form>
 
-			<?php $collections = self::get_collections(); ?>
+			<?php $collections = self::fetch_live_collections(); ?>
 			<?php if ( $collections ) : ?>
 				<h2><?php esc_html_e( 'Collections', 'medialane' ); ?></h2>
 				<table class="widefat" style="max-width:640px;">
@@ -258,6 +331,9 @@ class Settings {
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+			<?php else : ?>
+				<h2><?php esc_html_e( 'Collections', 'medialane' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'No collections found for this wallet yet. Create one below.', 'medialane' ); ?></p>
 			<?php endif; ?>
 
 			<h2><?php esc_html_e( 'Create a new collection', 'medialane' ); ?></h2>

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   createMintIntent, getToken, buildSponsoredInvoke, executeSponsoredInvoke,
   buildSponsoredDeploy, provisionRecipientWallet, saveCollectionEntry, saveCategoryMap,
+  saveWalletAddress,
 } from "../../assets/src/api.js";
 
 describe("api client", () => {
@@ -87,5 +88,15 @@ describe("api client", () => {
       expect.stringContaining("/settings/category-map"),
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("saveWalletAddress posts to /settings/wallet", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ address: "0xabc" }) });
+    const body = await saveWalletAddress("0xabc");
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/settings/wallet"),
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(body.address).toBe("0xabc");
   });
 });

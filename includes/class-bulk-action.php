@@ -57,7 +57,10 @@ class BulkAction {
 		if ( 'edit.php' !== $hook ) {
 			return;
 		}
-		$summaries = array();
+		// Fetched once per page load, not once per post — resolve_collection_for_post()
+		// only ever validates against this single fetch.
+		$live_collections = Settings::fetch_live_collections();
+		$summaries        = array();
 		foreach ( self::get_pending_posts() as $p ) {
 			$summaries[ $p->ID ] = array(
 				'title'             => get_the_title( $p ),
@@ -65,7 +68,7 @@ class BulkAction {
 				'content'           => $p->post_content,
 				'image'             => has_post_thumbnail( $p ) ? get_the_post_thumbnail_url( $p, 'large' ) : '',
 				'authorEmail'       => get_the_author_meta( 'user_email', $p->post_author ),
-				'collectionContract' => Settings::resolve_collection_for_post( $p->ID ),
+				'collectionContract' => Settings::resolve_collection_for_post( $p->ID, $live_collections ),
 			);
 		}
 		wp_enqueue_script( 'medialane-bulk-action', MEDIALANE_PLUGIN_URL . 'assets/dist/bulk-action.js', array(), MEDIALANE_PLUGIN_VERSION, true );

@@ -136,7 +136,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		$this->assertStringEndsWith( '/v1/business/provisioning', $captured_urls[1] );
 	}
 
-	public function test_settings_collections_route_appends_a_named_collection() {
+	public function test_settings_collections_route_saves_a_collection_s_label() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
 		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/collections' );
@@ -144,10 +144,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		$response = $this->server->dispatch( $request );
 
 		$this->assertSame( 200, $response->get_status() );
-		$this->assertSame(
-			array( array( 'contract' => '0xaaa11', 'label' => 'Politics' ) ),
-			$response->get_data()['collections']
-		);
+		$this->assertSame( array( '0xaaa11' => 'Politics' ), $response->get_data()['labels'] );
 	}
 
 	public function test_settings_collections_route_requires_admin_permission() {
@@ -155,6 +152,27 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 
 		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/collections' );
 		$request->set_body_params( array( 'contract' => '0xaaa11', 'label' => 'Politics' ) );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+	}
+
+	public function test_settings_wallet_route_saves_the_address_immediately() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/wallet' );
+		$request->set_body_params( array( 'address' => '0xaaa11' ) );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( '0xaaa11', Settings::get_wallet_address() );
+	}
+
+	public function test_settings_wallet_route_requires_admin_permission() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/wallet' );
+		$request->set_body_params( array( 'address' => '0xaaa11' ) );
 		$response = $this->server->dispatch( $request );
 
 		$this->assertSame( 403, $response->get_status() );

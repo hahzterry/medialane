@@ -33,20 +33,41 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   `WalletAccount.signMessage`. The paymaster covers the network fee.
 - A site can hold multiple `mip-erc721` collections, all owned by the same
   connected wallet (the chain only enforces single ownership, not which of
-  an owner's collections a mint targets). `Settings::get_collections()`
-  holds the named list (`medialane_collections`); the first one created
-  becomes `Settings::get_default_collection()` automatically and stays the
-  default until explicitly changed. `assets/src/settings.js`'s
-  `createAndRegisterCollection()` creates one on-chain (`GET
-  /v1/collections?owner=` confirms it indexed) and registers it via
-  `POST /settings/collections`. `Settings::resolve_collection_for_post()`
-  picks which collection a given post routes to: its first category
-  matched against `Settings::get_category_map()`
-  (`medialane_category_collections`, `POST /settings/category-map`), falling
-  back to the default. The metabox exposes a manual override `<select>`
-  when more than one collection exists; the bulk action groups posts by
-  their resolved collection and runs one batch transaction per group,
-  since `executeMintBatch()` still only ever targets one collection per call.
+  an owner's collections a mint targets). **Which collections exist is never
+  decided locally.** `Settings::fetch_live_collections()` asks
+  `medialane-backend`'s indexer (`GET /v1/collections?owner=`) fresh, every
+  time it's called — that's the only authority on what actually exists,
+  per `medialane-core`'s "the smart contract is the only truth" (`00
+  §1`)/"never a second source of truth" (`02 §IV`) principles. `wp_options`
+  (`medialane_collection_labels`) stores *only* a friendly label per
+  contract — a name has no on-chain meaning, so that part is legitimate
+  local data, same category as a slug. A stored label whose contract isn't
+  in the live list doesn't render. `Settings::resolve_collection_for_post()`
+  takes the live list as a required argument and validates against it:
+  a category-mapped or stored-default contract that isn't actually live
+  falls through to the first real collection, never to stale local data.
+  Callers that need this for many posts in one request (`BulkAction::enqueue()`)
+  fetch once and pass the list in, rather than one backend call per post.
+  `assets/src/settings.js`'s `createAndRegisterCollection()` creates a
+  collection on-chain, polls `GET /v1/collections?owner=` until the indexer
+  confirms it (reading the real `contractAddress` field — a prior version
+  of this code read `contract`/`address`, which don't exist on the real
+  response and always returned `undefined`), then saves its label via
+  `POST /settings/collections`. The metabox exposes a manual override
+  `<select>` when more than one live collection exists; the bulk action
+  groups posts by resolved collection and runs one batch transaction per
+  group, since `executeMintBatch()` still only ever targets one collection
+  per call.
+- The Settings page is gated, in order: API Key → Connect Wallet → everything
+  else. Nothing past a gate renders until that step is real (`Settings::get_api_key()`
+  non-empty, then `Settings::get_wallet_address()` non-empty) — no collection
+  list, no category mapping, nothing that would only work once connected.
+  Connecting a wallet saves immediately via `POST /settings/wallet`
+  (`Settings::save_wallet_address()`), not deferred to the page's own "Save
+  Changes" submit — a prior version only staged the address into a hidden
+  form field, so a wallet could successfully connect and create collections
+  (which do save immediately) while still showing "Not connected" on the
+  next load, since nobody had separately submitted the form.
 - Post state (`none|minting|minted|error`) lives in post meta, written only
   by PHP (`includes/class-post-meta.php`) through the `/posts/{id}/minting`,
   `/posts/{id}/minted`, and `/posts/{id}/error` REST routes. JS reads this

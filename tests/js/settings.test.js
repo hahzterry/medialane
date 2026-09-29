@@ -9,8 +9,9 @@ vi.mock("../../assets/src/api.js", () => ({
   syncCollectionTx: vi.fn().mockResolvedValue({}),
   saveCollectionContract: vi.fn().mockResolvedValue({}),
   getCollectionsByOwner: vi.fn().mockResolvedValue({ data: [{ contract: "0xnewcol" }] }),
-  saveCollectionEntry: vi.fn().mockResolvedValue({ collections: [] }),
+  saveCollectionEntry: vi.fn().mockResolvedValue({ labels: {} }),
   saveCategoryMap: vi.fn().mockResolvedValue({ map: {} }),
+  saveWalletAddress: vi.fn().mockResolvedValue({ address: "0xowner" }),
 }));
 
 const { pollForCollection, createAndRegisterCollection, collectCategoryMap } = await import("../../assets/src/settings.js");
@@ -20,12 +21,12 @@ describe("pollForCollection", () => {
     global.window = { medialaneData: { restUrl: "/wp-json/medialane/v1", nonce: "abc" } };
   });
 
-  it("returns the first collection contract once the list is non-empty", async () => {
+  it("returns the first collection's real contractAddress field once the list is non-empty", async () => {
     const { getCollectionsByOwner } = await import("../../assets/src/api.js");
     getCollectionsByOwner
       .mockReset()
       .mockResolvedValueOnce({ data: [] })
-      .mockResolvedValueOnce({ data: [{ contract: "0xcol" }] });
+      .mockResolvedValueOnce({ data: [{ contractAddress: "0xcol" }] });
 
     const result = await pollForCollection("0xowner", 2);
     expect(result).toBe("0xcol");
@@ -36,7 +37,7 @@ describe("pollForCollection", () => {
     getCollectionsByOwner
       .mockReset()
       .mockRejectedValueOnce(new Error("upstream down"))
-      .mockResolvedValueOnce({ data: [{ contract: "0xcol" }] });
+      .mockResolvedValueOnce({ data: [{ contractAddress: "0xcol" }] });
 
     const result = await pollForCollection("0xowner", 2);
     expect(result).toBe("0xcol");
@@ -47,7 +48,7 @@ describe("createAndRegisterCollection", () => {
   it("creates the on-chain collection, waits for it to index, and registers it under the given label", async () => {
     const { executeCalls } = await import("../../assets/src/wallet.js");
     const { createCollectionIntent, saveCollectionEntry, getCollectionsByOwner } = await import("../../assets/src/api.js");
-    getCollectionsByOwner.mockReset().mockResolvedValue({ data: [{ contract: "0xnewcol" }] });
+    getCollectionsByOwner.mockReset().mockResolvedValue({ data: [{ contractAddress: "0xnewcol" }] });
 
     const contract = await createAndRegisterCollection("0xowner", {}, "Politics");
 

@@ -82,6 +82,11 @@ class RestProxy {
 			'callback'            => array( __CLASS__, 'save_collection' ),
 			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
 		) );
+		register_rest_route( self::NAMESPACE, '/settings/wallet', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_wallet' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
+		) );
 		register_rest_route( self::NAMESPACE, '/collections', array(
 			'methods'             => 'GET',
 			'callback'            => array( __CLASS__, 'forward_list_collections' ),
@@ -143,11 +148,17 @@ class RestProxy {
 		return rest_ensure_response( array( 'contract' => Settings::get_collection_contract() ) );
 	}
 
+	public static function save_wallet( \WP_REST_Request $request ) {
+		$address = (string) $request->get_param( 'address' );
+		Settings::save_wallet_address( $address );
+		return rest_ensure_response( array( 'address' => Settings::get_wallet_address() ) );
+	}
+
 	public static function save_collections( \WP_REST_Request $request ) {
 		$contract = (string) $request->get_param( 'contract' );
 		$label    = (string) $request->get_param( 'label' );
-		Settings::add_collection( $contract, $label );
-		return rest_ensure_response( array( 'collections' => Settings::get_collections() ) );
+		Settings::save_collection_label( $contract, $label );
+		return rest_ensure_response( array( 'labels' => Settings::get_collection_labels() ) );
 	}
 
 	public static function save_category_map( \WP_REST_Request $request ) {

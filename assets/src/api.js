@@ -60,6 +60,10 @@ export function saveCategoryMap(map) {
   return request("/settings/category-map", { method: "POST", body: JSON.stringify({ map }) });
 }
 
+export function saveWalletAddress(address) {
+  return request("/settings/wallet", { method: "POST", body: JSON.stringify({ address }) });
+}
+
 export function buildSponsoredInvoke(params) {
   return request("/paymaster/invoke/build", { method: "POST", body: JSON.stringify(params) });
 }

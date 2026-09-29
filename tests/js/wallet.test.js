@@ -18,6 +18,7 @@ vi.mock("starknet", () => ({
     constructor(_provider, address, _privateKey) { this.address = address; }
     async signMessage(typedData) { return ["0xsig1", "0xsig2"]; }
   },
+  hash: { getSelectorFromName: (name) => (name === "Transfer" ? "0x1" : "0x2") },
 }));
 vi.mock("@medialane/sdk/starknet", () => ({
   computeAccountAddress: (pubkey) => `0xaddr-for-${pubkey}`,
@@ -25,7 +26,7 @@ vi.mock("@medialane/sdk/starknet", () => ({
 
 const {
   connectWallet, executeCalls, signTypedData, waitForConfirmation,
-  generateInterimKeypair, signDeploymentWithInterimKey,
+  generateInterimKeypair, signDeploymentWithInterimKey, mintedTokenIdsFromReceipt,
 } = await import("../../assets/src/wallet.js");
 
 describe("connectWallet", () => {
@@ -98,6 +99,28 @@ describe("waitForConfirmation", () => {
     const receipt = { isReverted: () => true, value: { revert_reason: "insufficient balance" } };
     const provider = { waitForTransaction: vi.fn().mockResolvedValue(receipt) };
     await expect(waitForConfirmation("0x123", provider)).rejects.toThrow("insufficient balance");
+  });
+});
+
+describe("mintedTokenIdsFromReceipt", () => {
+  it("extracts one token id per Transfer(from=0) event on the given contract, in event order", () => {
+    const receipt = {
+      events: [
+        { from_address: "0xc011", keys: ["0x1", "0x0", "0xabc", "0x5", "0x0"] },
+        { from_address: "0xd0e1", keys: ["0x1", "0x0", "0xdef", "0x9", "0x0"] },
+        { from_address: "0xc011", keys: ["0x1", "0x0", "0xabc", "0x6", "0x0"] },
+      ],
+    };
+    expect(mintedTokenIdsFromReceipt(receipt, "0xc011")).toEqual(["5", "6"]);
+  });
+
+  it("ignores non-mint transfers (from a real address, not the zero address)", () => {
+    const receipt = {
+      events: [
+        { from_address: "0xc011", keys: ["0x1", "0xbad0", "0xabc", "0x5", "0x0"] },
+      ],
+    };
+    expect(mintedTokenIdsFromReceipt(receipt, "0xc011")).toEqual([]);
   });
 });
 

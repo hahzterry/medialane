@@ -5,6 +5,7 @@ vi.mock("../../assets/src/wallet.js", () => ({
   connectWallet: vi.fn().mockResolvedValue({ address: "0xabc", account: {} }),
   signTypedData: vi.fn().mockResolvedValue(["0x1", "0x2"]),
   waitForConfirmation: vi.fn().mockResolvedValue({ isReverted: () => false }),
+  mintedTokenIdsFromReceipt: vi.fn().mockReturnValue(Array.from({ length: 30 }, (_, i) => String(i + 1))),
   generateInterimKeypair: vi.fn().mockReturnValue({ privateKey: "0xpriv", publicKey: "0xpub", address: "0xinterim" }),
   signDeploymentWithInterimKey: vi.fn().mockResolvedValue(["0xdsig"]),
 }));

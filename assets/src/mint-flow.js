@@ -1,4 +1,7 @@
-import { signTypedData, waitForConfirmation, generateInterimKeypair, signDeploymentWithInterimKey } from "./wallet.js";
+import {
+  signTypedData, waitForConfirmation, generateInterimKeypair,
+  signDeploymentWithInterimKey, mintedTokenIdsFromReceipt,
+} from "./wallet.js";
 import {
   uploadJson, createMintIntent, buildSponsoredInvoke, executeSponsoredInvoke,
   buildSponsoredDeploy, provisionRecipientWallet,
@@ -78,10 +81,11 @@ export async function executeMintBatch({ restUrl, nonce, account, address, colle
 
     // The paymaster returning a tx hash means it was broadcast, not that it
     // landed or succeeded. Only mark posts minted once the chain confirms it.
-    await waitForConfirmation(txHash);
+    const receipt = await waitForConfirmation(txHash);
+    const tokenIds = mintedTokenIdsFromReceipt(receipt, collectionContract);
 
-    await Promise.all(entries.map((e) =>
-      markMinted(restUrl, nonce, e.postId, { tokenId: "", txHash, contract: collectionContract, license: e.license })
+    await Promise.all(entries.map((e, i) =>
+      markMinted(restUrl, nonce, e.postId, { tokenId: tokenIds[i] || "", txHash, contract: collectionContract, license: e.license })
     ));
     return entries.map((e) => ({ postId: e.postId, txHash }));
   } catch (err) {

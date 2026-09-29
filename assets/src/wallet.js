@@ -1,5 +1,5 @@
 import { getStarknet } from "get-starknet-core";
-import { RpcProvider, WalletAccount, stark, ec, Account } from "starknet";
+import { RpcProvider, WalletAccount, stark, ec, Account, hash } from "starknet";
 import { computeAccountAddress } from "@medialane/sdk/starknet";
 
 export async function connectWallet() {
@@ -48,6 +48,31 @@ export async function waitForConfirmation(txHash, provider = new RpcProvider()) 
     throw new Error(receipt.value?.revert_reason || "Transaction reverted");
   }
   return receipt;
+}
+
+const TRANSFER_SELECTOR = BigInt(hash.getSelectorFromName("Transfer"));
+
+function sameFelt(a, b) {
+  if (a === undefined) return false;
+  try {
+    return BigInt(a) === BigInt(b);
+  } catch {
+    return false;
+  }
+}
+
+// A batch mint emits one Transfer(from=0, to=recipient, tokenId) event per
+// call, on the collection contract, in the same order the calls executed.
+export function mintedTokenIdsFromReceipt(receipt, contract) {
+  const tokenIds = [];
+  for (const event of receipt.events ?? []) {
+    if (!sameFelt(event.from_address, contract)) continue;
+    const keys = event.keys ?? [];
+    if (!sameFelt(keys[0], TRANSFER_SELECTOR)) continue;
+    if (keys.length !== 5 || !sameFelt(keys[1], 0n)) continue;
+    tokenIds.push((BigInt(keys[3]) + (BigInt(keys[4]) << 128n)).toString());
+  }
+  return tokenIds;
 }
 
 export async function executeCalls(account, calls) {

@@ -14,6 +14,7 @@ vi.mock("../../assets/src/wallet.js", () => ({
   waitForConfirmation: vi.fn().mockResolvedValue({ isReverted: () => false }),
   generateInterimKeypair: vi.fn().mockReturnValue({ privateKey: "0xpriv", publicKey: "0xpub", address: "0xinterim" }),
   signDeploymentWithInterimKey: vi.fn().mockResolvedValue(["0xdsig"]),
+  mintedTokenIdsFromReceipt: vi.fn().mockReturnValue(["101", "102"]),
 }));
 
 describe("prepareMint", () => {
@@ -64,6 +65,13 @@ describe("executeMintBatch", () => {
     expect(results).toEqual([
       { postId: 1, txHash: "0xtx" },
       { postId: 2, txHash: "0xtx" },
+    ]);
+
+    const mintedCalls = global.fetch.mock.calls.filter(([url]) => url.endsWith("/minted"));
+    const bodies = mintedCalls.map(([, opts]) => JSON.parse(opts.body));
+    expect(bodies).toEqual([
+      expect.objectContaining({ tokenId: "101" }),
+      expect.objectContaining({ tokenId: "102" }),
     ]);
   });
 

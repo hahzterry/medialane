@@ -102,6 +102,20 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
 - `Settings::get_license_default()` (set on the Settings page) is what
   `bulk-action.js` uses instead of a hardcoded license, and what the metabox's
   license `<select>` pre-selects for a single post.
+- License is programmable, not a string. `assets/src/license.js`'s
+  `buildLicenseAttributes(preset, aiPolicy)` expands a chosen preset (`CC
+  BY-SA`, `MIT`, `All Rights Reserved`, etc.) into the canonical trait set
+  documented in `medialane-core`'s `04-licensing-model.md` — `Commercial
+  Use`, `Derivatives`, `Attribution`, `Territory`, `AI Policy` — and
+  `prepareMint()` uploads it as the metadata's `attributes` array, never as
+  a flat `license` field. That's the same encoding `medialane-backend`'s
+  remix-offers flow reads (`attrs.find(a => a.trait_type === "License")`),
+  so assets minted through this plugin are legible to the rest of the
+  platform, not just to this plugin's own post meta. `Custom` intentionally
+  has no expansion — its Commercial Use/Derivatives/Attribution are
+  author-set, and the plugin doesn't collect per-trait overrides, so it
+  doesn't fabricate values nobody chose. `Settings::get_ai_policy_default()`
+  is the site-wide default; there's no per-post override yet.
 
 ## Common pitfalls
 

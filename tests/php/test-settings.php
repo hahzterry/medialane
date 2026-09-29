@@ -48,4 +48,15 @@ class Test_Settings extends WP_UnitTestCase {
 		$this->assertSame( 'CC BY-SA', Settings::get_license_default() );
 		delete_option( Settings::OPTION_LICENSE_DEFAULT );
 	}
+
+	public function test_get_ai_policy_default_falls_back_to_allowed() {
+		delete_option( Settings::OPTION_AI_POLICY_DEFAULT );
+		$this->assertSame( 'Allowed', Settings::get_ai_policy_default() );
+	}
+
+	public function test_get_ai_policy_default_reads_the_saved_option() {
+		update_option( Settings::OPTION_AI_POLICY_DEFAULT, 'Not Allowed' );
+		$this->assertSame( 'Not Allowed', Settings::get_ai_policy_default() );
+		delete_option( Settings::OPTION_AI_POLICY_DEFAULT );
+	}
 }

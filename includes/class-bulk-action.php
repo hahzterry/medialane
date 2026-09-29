@@ -76,6 +76,7 @@ class BulkAction {
 			'collectionContract' => Settings::get_collection_contract(),
 			'contentScope'       => Settings::get_content_scope(),
 			'licenseDefault'     => Settings::get_license_default(),
+			'aiPolicyDefault'    => Settings::get_ai_policy_default(),
 			'posts'              => $summaries,
 		) );
 	}

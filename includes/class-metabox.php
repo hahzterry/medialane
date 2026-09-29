@@ -29,9 +29,9 @@ class Metabox {
 					<p>
 						<label for="medialane-license"><?php esc_html_e( 'License', 'medialane' ); ?></label>
 						<select id="medialane-license">
-							<option value="All Rights Reserved" <?php selected( Settings::get_license_default(), 'All Rights Reserved' ); ?>><?php esc_html_e( 'All Rights Reserved', 'medialane' ); ?></option>
-							<option value="CC BY-SA" <?php selected( Settings::get_license_default(), 'CC BY-SA' ); ?>><?php esc_html_e( 'CC BY-SA', 'medialane' ); ?></option>
-							<option value="Custom"><?php esc_html_e( 'Custom', 'medialane' ); ?></option>
+							<?php foreach ( Settings::LICENSE_PRESETS as $preset ) : ?>
+								<option value="<?php echo esc_attr( $preset ); ?>" <?php selected( Settings::get_license_default(), $preset ); ?>><?php echo esc_html( $preset ); ?></option>
+							<?php endforeach; ?>
 						</select>
 					</p>
 					<p><textarea id="medialane-license-custom" placeholder="<?php esc_attr_e( 'Custom license terms (used if License = Custom)', 'medialane' ); ?>" style="display:none;width:100%;"></textarea></p>
@@ -57,6 +57,7 @@ class Metabox {
 			'walletAddress'      => Settings::get_wallet_address(),
 			'collectionContract' => Settings::get_collection_contract(),
 			'contentScope'       => Settings::get_content_scope(),
+			'aiPolicyDefault'    => Settings::get_ai_policy_default(),
 			'postId'             => $post ? $post->ID : 0,
 			'postTitle'          => $post ? get_the_title( $post ) : '',
 			'postExcerpt'        => $post ? get_the_excerpt( $post ) : '',

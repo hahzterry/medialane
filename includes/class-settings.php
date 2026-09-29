@@ -11,8 +11,15 @@ class Settings {
 	const OPTION_WALLET     = 'medialane_wallet_address';
 	const OPTION_COLLECTION = 'medialane_collection_contract';
 	const OPTION_LICENSE_DEFAULT = 'medialane_license_default';
+	const OPTION_AI_POLICY_DEFAULT = 'medialane_ai_policy_default';
 	const OPTION_CONTENT_SCOPE   = 'medialane_content_scope'; // 'excerpt' | 'full'
 	const CAP_TOKENIZE = 'medialane_tokenize_posts';
+
+	const LICENSE_PRESETS = array(
+		'CC BY-SA', 'CC BY', 'CC BY-NC', 'CC BY-ND', 'CC BY-NC-SA', 'CC BY-NC-ND',
+		'CC0', 'MIT', 'Apache 2.0', 'All Rights Reserved', 'Custom',
+	);
+	const AI_POLICIES = array( 'Allowed', 'Training Only', 'Not Allowed' );
 
 	public static function register() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
@@ -48,6 +55,7 @@ class Settings {
 		register_setting( 'medialane', self::OPTION_WALLET, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_address' ) ) );
 		register_setting( 'medialane', self::OPTION_COLLECTION, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_address' ) ) );
 		register_setting( 'medialane', self::OPTION_LICENSE_DEFAULT, array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'medialane', self::OPTION_AI_POLICY_DEFAULT, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'medialane', self::OPTION_CONTENT_SCOPE, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 	}
 
@@ -92,6 +100,11 @@ class Settings {
 		return $license ? (string) $license : 'All Rights Reserved';
 	}
 
+	public static function get_ai_policy_default(): string {
+		$policy = get_option( self::OPTION_AI_POLICY_DEFAULT, '' );
+		return $policy ? (string) $policy : 'Allowed';
+	}
+
 	public static function render_settings_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
@@ -131,10 +144,22 @@ class Settings {
 						<th><label for="medialane_license_default"><?php esc_html_e( 'Default license', 'medialane' ); ?></label></th>
 						<td>
 							<select id="medialane_license_default" name="<?php echo esc_attr( self::OPTION_LICENSE_DEFAULT ); ?>">
-								<option value="All Rights Reserved" <?php selected( self::get_license_default(), 'All Rights Reserved' ); ?>><?php esc_html_e( 'All Rights Reserved', 'medialane' ); ?></option>
-								<option value="CC BY-SA" <?php selected( self::get_license_default(), 'CC BY-SA' ); ?>><?php esc_html_e( 'CC BY-SA', 'medialane' ); ?></option>
+								<?php foreach ( self::LICENSE_PRESETS as $preset ) : ?>
+									<option value="<?php echo esc_attr( $preset ); ?>" <?php selected( self::get_license_default(), $preset ); ?>><?php echo esc_html( $preset ); ?></option>
+								<?php endforeach; ?>
 							</select>
 							<p class="description"><?php esc_html_e( 'Used to tokenize posts in bulk, and pre-selected when tokenizing a single post.', 'medialane' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="medialane_ai_policy_default"><?php esc_html_e( 'Default AI policy', 'medialane' ); ?></label></th>
+						<td>
+							<select id="medialane_ai_policy_default" name="<?php echo esc_attr( self::OPTION_AI_POLICY_DEFAULT ); ?>">
+								<?php foreach ( self::AI_POLICIES as $policy ) : ?>
+									<option value="<?php echo esc_attr( $policy ); ?>" <?php selected( self::get_ai_policy_default(), $policy ); ?>><?php echo esc_html( $policy ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="description"><?php esc_html_e( 'Whether AI systems may use tokenized content for training. Recorded on-chain as part of the license, alongside commercial-use and remix terms.', 'medialane' ); ?></p>
 						</td>
 					</tr>
 				</table>

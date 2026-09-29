@@ -35,6 +35,23 @@ describe("prepareMint", () => {
     expect(result.postId).toBe(42);
   });
 
+  it("uploads the license as structured attributes, not a flat string, and never as its own top-level field", async () => {
+    const { uploadJson } = await import("../../assets/src/api.js");
+    uploadJson.mockClear();
+
+    await prepareMint({
+      postId: 42, title: "A Post", body: "Body", image: "", license: "CC BY-SA", aiPolicy: "Training Only",
+      address: "0xowner", collectionContract: "0xcol", authorEmail: "author@example.com",
+    });
+
+    const payload = uploadJson.mock.calls[0][0];
+    expect(payload.license).toBeUndefined();
+    expect(payload.attributes).toEqual(expect.arrayContaining([
+      { trait_type: "License", value: "CC BY-SA" },
+      { trait_type: "AI Policy", value: "Training Only" },
+    ]));
+  });
+
   it("refuses to mint when the post's author has no registered email", async () => {
     await expect(prepareMint({
       postId: 42, title: "A Post", body: "Body", image: "", license: "CC BY-SA",

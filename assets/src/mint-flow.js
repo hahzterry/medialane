@@ -6,6 +6,7 @@ import {
   uploadJson, createMintIntent, buildSponsoredInvoke, executeSponsoredInvoke,
   buildSponsoredDeploy, provisionRecipientWallet,
 } from "./api.js";
+import { buildLicenseAttributes } from "./license.js";
 
 async function postJson(restUrl, nonce, path, body) {
   await fetch(`${restUrl}${path}`, {
@@ -49,12 +50,15 @@ async function resolveAuthorWallet(authorEmail) {
 }
 
 // Does not touch the chain or post meta — callers batch these together before executing.
-export async function prepareMint({ postId, title, body, image, license, address, collectionContract, authorEmail }) {
+export async function prepareMint({ postId, title, body, image, license, aiPolicy, address, collectionContract, authorEmail }) {
   if (!authorEmail) {
     throw new Error(`Post ${postId}'s author has no registered email. Assign a valid author before tokenizing.`);
   }
   const recipient = await resolveAuthorWallet(authorEmail);
-  const metaRes = await uploadJson({ name: title, description: body, image: image || undefined, license });
+  const metaRes = await uploadJson({
+    name: title, description: body, image: image || undefined,
+    attributes: buildLicenseAttributes(license, aiPolicy),
+  });
   const intentRes = await createMintIntent({
     owner: address,
     collectionId: collectionContract,

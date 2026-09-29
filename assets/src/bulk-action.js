@@ -25,6 +25,7 @@ export async function tokenizeBulk(postIds, onProgress) {
     entries.push(await prepareMint({
       postId, title: post.title, body, image: post.image, license: data.licenseDefault, address,
       collectionContract: data.collectionContract, authorEmail: post.authorEmail,
+      aiPolicy: data.aiPolicyDefault,
     }));
   }
 

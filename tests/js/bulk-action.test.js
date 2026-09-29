@@ -54,7 +54,9 @@ describe("tokenizeBulk", () => {
     await tokenizeBulk(["1"], () => {});
 
     const { uploadJson } = await import("../../assets/src/api.js");
-    expect(uploadJson).toHaveBeenCalledWith(expect.objectContaining({ license: "CC BY-SA" }));
+    expect(uploadJson).toHaveBeenCalledWith(expect.objectContaining({
+      attributes: expect.arrayContaining([{ trait_type: "License", value: "CC BY-SA" }]),
+    }));
   });
 
   it("splits more than 25 posts into multiple batches", async () => {

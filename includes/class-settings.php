@@ -13,21 +13,11 @@ class Settings {
 	const OPTION_LICENSE_DEFAULT = 'medialane_license_default';
 	const OPTION_CONTENT_SCOPE   = 'medialane_content_scope'; // 'excerpt' | 'full'
 	const CAP_TOKENIZE = 'medialane_tokenize_posts';
-	const OPTION_EDITOR_ACCESS = 'medialane_editor_access';
 
 	public static function register() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
-		add_action( 'update_option_' . self::OPTION_EDITOR_ACCESS, function ( $old, $new ) {
-			self::save_editor_access( (bool) $new );
-		}, 10, 2 );
-		// update_option_{$option} only fires once the option row already exists;
-		// the very first save goes through add_option() instead, which fires
-		// add_option_{$option}( $option, $value ) — a 2-arg signature, no $old.
-		add_action( 'add_option_' . self::OPTION_EDITOR_ACCESS, function ( $option, $value ) {
-			self::save_editor_access( (bool) $value );
-		}, 10, 2 );
 	}
 
 	public static function enqueue( string $hook ) {
@@ -59,30 +49,12 @@ class Settings {
 		register_setting( 'medialane', self::OPTION_COLLECTION, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_address' ) ) );
 		register_setting( 'medialane', self::OPTION_LICENSE_DEFAULT, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'medialane', self::OPTION_CONTENT_SCOPE, array( 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'medialane', self::OPTION_EDITOR_ACCESS, array( 'sanitize_callback' => 'rest_sanitize_boolean' ) );
 	}
 
 	public static function grant_default_capability() {
 		$role = get_role( 'administrator' );
 		if ( $role && ! $role->has_cap( self::CAP_TOKENIZE ) ) {
 			$role->add_cap( self::CAP_TOKENIZE );
-		}
-	}
-
-	public static function editor_access_enabled(): bool {
-		return (bool) get_option( self::OPTION_EDITOR_ACCESS, false );
-	}
-
-	public static function save_editor_access( bool $enabled ) {
-		update_option( self::OPTION_EDITOR_ACCESS, $enabled );
-		$role = get_role( 'editor' );
-		if ( ! $role ) {
-			return;
-		}
-		if ( $enabled ) {
-			$role->add_cap( self::CAP_TOKENIZE );
-		} else {
-			$role->remove_cap( self::CAP_TOKENIZE );
 		}
 	}
 
@@ -113,6 +85,11 @@ class Settings {
 	public static function get_content_scope(): string {
 		$scope = get_option( self::OPTION_CONTENT_SCOPE, 'excerpt' );
 		return in_array( $scope, array( 'excerpt', 'full' ), true ) ? $scope : 'excerpt';
+	}
+
+	public static function get_license_default(): string {
+		$license = get_option( self::OPTION_LICENSE_DEFAULT, '' );
+		return $license ? (string) $license : 'All Rights Reserved';
 	}
 
 	public static function render_settings_page() {
@@ -151,12 +128,13 @@ class Settings {
 						</td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Let Editors tokenize their own posts', 'medialane' ); ?></th>
+						<th><label for="medialane_license_default"><?php esc_html_e( 'Default license', 'medialane' ); ?></label></th>
 						<td>
-							<label>
-								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_EDITOR_ACCESS ); ?>" value="1" <?php checked( self::editor_access_enabled() ); ?> />
-								<?php esc_html_e( 'Editors can tokenize posts they can edit; Administrators can always tokenize any post.', 'medialane' ); ?>
-							</label>
+							<select id="medialane_license_default" name="<?php echo esc_attr( self::OPTION_LICENSE_DEFAULT ); ?>">
+								<option value="All Rights Reserved" <?php selected( self::get_license_default(), 'All Rights Reserved' ); ?>><?php esc_html_e( 'All Rights Reserved', 'medialane' ); ?></option>
+								<option value="CC BY-SA" <?php selected( self::get_license_default(), 'CC BY-SA' ); ?>><?php esc_html_e( 'CC BY-SA', 'medialane' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Used to tokenize posts in bulk, and pre-selected when tokenizing a single post.', 'medialane' ); ?></p>
 						</td>
 					</tr>
 				</table>

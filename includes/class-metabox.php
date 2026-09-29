@@ -29,8 +29,8 @@ class Metabox {
 					<p>
 						<label for="medialane-license"><?php esc_html_e( 'License', 'medialane' ); ?></label>
 						<select id="medialane-license">
-							<option value="All Rights Reserved"><?php esc_html_e( 'All Rights Reserved', 'medialane' ); ?></option>
-							<option value="CC BY-SA"><?php esc_html_e( 'CC BY-SA', 'medialane' ); ?></option>
+							<option value="All Rights Reserved" <?php selected( Settings::get_license_default(), 'All Rights Reserved' ); ?>><?php esc_html_e( 'All Rights Reserved', 'medialane' ); ?></option>
+							<option value="CC BY-SA" <?php selected( Settings::get_license_default(), 'CC BY-SA' ); ?>><?php esc_html_e( 'CC BY-SA', 'medialane' ); ?></option>
 							<option value="Custom"><?php esc_html_e( 'Custom', 'medialane' ); ?></option>
 						</select>
 					</p>

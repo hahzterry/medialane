@@ -24,6 +24,7 @@ describe("tokenizeBulk", () => {
       medialaneData: {
         collectionContract: "0xcol",
         contentScope: "excerpt",
+        licenseDefault: "CC BY-SA",
         restUrl: "/wp-json/medialane/v1",
         nonce: "abc",
         posts: {
@@ -43,6 +44,17 @@ describe("tokenizeBulk", () => {
       "1:minting", "2:minting",
       "1:minted", "2:minted",
     ]);
+  });
+
+  it("uses the site's configured default license instead of a hardcoded one", async () => {
+    const { createMintIntent } = await import("../../assets/src/api.js");
+    createMintIntent.mockClear();
+    global.window.medialaneData.licenseDefault = "CC BY-SA";
+
+    await tokenizeBulk(["1"], () => {});
+
+    const { uploadJson } = await import("../../assets/src/api.js");
+    expect(uploadJson).toHaveBeenCalledWith(expect.objectContaining({ license: "CC BY-SA" }));
   });
 
   it("splits more than 25 posts into multiple batches", async () => {

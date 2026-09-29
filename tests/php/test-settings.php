@@ -38,13 +38,14 @@ class Test_Settings extends WP_UnitTestCase {
 		$this->assertTrue( get_role( 'administrator' )->has_cap( Settings::CAP_TOKENIZE ) );
 	}
 
-	public function test_save_editor_access_grants_and_revokes_the_editor_role() {
-		Settings::save_editor_access( true );
-		$this->assertTrue( get_role( 'editor' )->has_cap( Settings::CAP_TOKENIZE ) );
-		$this->assertTrue( Settings::editor_access_enabled() );
+	public function test_get_license_default_falls_back_to_all_rights_reserved() {
+		delete_option( Settings::OPTION_LICENSE_DEFAULT );
+		$this->assertSame( 'All Rights Reserved', Settings::get_license_default() );
+	}
 
-		Settings::save_editor_access( false );
-		$this->assertFalse( get_role( 'editor' )->has_cap( Settings::CAP_TOKENIZE ) );
-		$this->assertFalse( Settings::editor_access_enabled() );
+	public function test_get_license_default_reads_the_saved_option() {
+		update_option( Settings::OPTION_LICENSE_DEFAULT, 'CC BY-SA' );
+		$this->assertSame( 'CC BY-SA', Settings::get_license_default() );
+		delete_option( Settings::OPTION_LICENSE_DEFAULT );
 	}
 }

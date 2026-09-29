@@ -61,12 +61,15 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   address, since that's what the chain checks for collection ownership;
   only `recipient` becomes the author's provisioned wallet.
 - Tokenize routes check a dedicated `medialane_tokenize_posts` capability
-  (`Settings::CAP_TOKENIZE`) rather than `manage_options`. It's granted to
-  Administrator on activation, and can be granted to Editor through a
-  settings-page toggle. `RestProxy::check_tokenize_permission()` also
+  (`Settings::CAP_TOKENIZE`) rather than `manage_options`, granted only to
+  Administrator on activation. `RestProxy::check_tokenize_permission()` also
   requires `edit_post` on any route that targets a specific post id.
   Settings and collection-management routes check `manage_options` through
-  `check_admin_permission()`.
+  `check_admin_permission()`. There's deliberately no way to extend this
+  capability to other roles from the UI: the site has exactly one connected
+  wallet (whoever holds it, on Settings), and that's the only address the
+  chain will accept as `owner` for a mint on this site's collection — see
+  the "one signer" note below.
 - Every admin screen that enqueues plugin JS localizes the same global name,
   `medialaneData` (see the `wp_localize_script` calls in `class-settings.php`,
   `class-metabox.php`, and `class-bulk-action.php`). This works because each
@@ -87,6 +90,18 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   list screen when published posts exist that haven't been tokenized yet,
   pointing at the same bulk action. It shares `get_pending_posts()` with
   `enqueue()` rather than querying twice.
+- One signer for the whole site, always. `medialane-backend`'s
+  `buildMintIntent` checks on-chain that the mint's `owner` is the
+  collection's registered owner; there's no multi-owner or authorized-signer
+  concept in the protocol. So the only wallet that can ever complete a mint
+  on this site is the one connected on the Settings page — every tokenize
+  action, whoever triggers it, needs that same wallet connected in the same
+  browser. There's no per-editor signing path, and none is planned: the
+  plugin's whole premise is that nobody but the person managing the site's
+  Medialane account ever needs a Starknet wallet at all.
+- `Settings::get_license_default()` (set on the Settings page) is what
+  `bulk-action.js` uses instead of a hardcoded license, and what the metabox's
+  license `<select>` pre-selects for a single post.
 
 ## Common pitfalls
 

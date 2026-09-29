@@ -60,6 +60,14 @@ export function executeSponsoredInvoke(params) {
   return request("/paymaster/invoke/execute", { method: "POST", body: JSON.stringify(params) });
 }
 
+export function buildSponsoredDeploy(params) {
+  return request("/paymaster/deploy/build", { method: "POST", body: JSON.stringify(params) });
+}
+
+export function provisionRecipientWallet(params) {
+  return request("/business/provisioning", { method: "POST", body: JSON.stringify(params) });
+}
+
 export async function getToken(contract, tokenId) {
   try {
     return await request(`/tokens/${contract}/${tokenId}`, { method: "GET" });

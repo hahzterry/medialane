@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMintIntent, getToken, buildSponsoredInvoke, executeSponsoredInvoke } from "../../assets/src/api.js";
+import {
+  createMintIntent, getToken, buildSponsoredInvoke, executeSponsoredInvoke,
+  buildSponsoredDeploy, provisionRecipientWallet,
+} from "../../assets/src/api.js";
 
 describe("api client", () => {
   beforeEach(() => {
@@ -42,5 +45,28 @@ describe("api client", () => {
       expect.objectContaining({ method: "POST" }),
     );
     expect(body.data.transactionHash).toBe("0x1");
+  });
+
+  it("buildSponsoredDeploy posts to /paymaster/deploy/build", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { typedData: {}, deployment: {}, calls: [] } }) });
+    await buildSponsoredDeploy({ ownerPubkey: "0xpub", ownerAddress: "0xaddr" });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/paymaster/deploy/build"),
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("provisionRecipientWallet posts to /business/provisioning", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { walletAddress: "0xnew" } }) });
+    const body = await provisionRecipientWallet({
+      recipientScheme: "email", recipientValue: "a@example.com",
+      interimOwnerPubkey: "0xpub", derivationSalt: "abcdefghijklmnop",
+      deployment: { typedData: {}, signature: ["0x1"], deployment: {} },
+    });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/business/provisioning"),
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(body.data.walletAddress).toBe("0xnew");
   });
 });

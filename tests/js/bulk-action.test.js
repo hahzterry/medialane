@@ -5,12 +5,16 @@ vi.mock("../../assets/src/wallet.js", () => ({
   connectWallet: vi.fn().mockResolvedValue({ address: "0xabc", account: {} }),
   signTypedData: vi.fn().mockResolvedValue(["0x1", "0x2"]),
   waitForConfirmation: vi.fn().mockResolvedValue({ isReverted: () => false }),
+  generateInterimKeypair: vi.fn().mockReturnValue({ privateKey: "0xpriv", publicKey: "0xpub", address: "0xinterim" }),
+  signDeploymentWithInterimKey: vi.fn().mockResolvedValue(["0xdsig"]),
 }));
 vi.mock("../../assets/src/api.js", () => ({
   uploadJson: vi.fn().mockResolvedValue({ data: { url: "ipfs://meta" } }),
   createMintIntent: vi.fn().mockResolvedValue({ data: { calls: [{ contractAddress: "0x1" }] } }),
   buildSponsoredInvoke: vi.fn().mockResolvedValue({ data: { typedData: { message: { calls: [] } } } }),
   executeSponsoredInvoke: vi.fn().mockResolvedValue({ data: { transactionHash: "0xtx" } }),
+  buildSponsoredDeploy: vi.fn().mockResolvedValue({ data: { typedData: {}, deployment: {}, calls: [] } }),
+  provisionRecipientWallet: vi.fn().mockResolvedValue({ data: { walletAddress: "0xauthorwallet" } }),
 }));
 
 describe("tokenizeBulk", () => {
@@ -21,7 +25,10 @@ describe("tokenizeBulk", () => {
         contentScope: "excerpt",
         restUrl: "/wp-json/medialane/v1",
         nonce: "abc",
-        posts: { 1: { title: "A", excerpt: "a", content: "aa", image: "" }, 2: { title: "B", excerpt: "b", content: "bb", image: "" } },
+        posts: {
+          1: { title: "A", excerpt: "a", content: "aa", image: "", authorEmail: "a@example.com" },
+          2: { title: "B", excerpt: "b", content: "bb", image: "", authorEmail: "b@example.com" },
+        },
       },
     };
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });

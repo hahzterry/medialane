@@ -1,5 +1,8 @@
-import { signTypedData, waitForConfirmation } from "./wallet.js";
-import { uploadJson, createMintIntent, buildSponsoredInvoke, executeSponsoredInvoke } from "./api.js";
+import { signTypedData, waitForConfirmation, generateInterimKeypair, signDeploymentWithInterimKey } from "./wallet.js";
+import {
+  uploadJson, createMintIntent, buildSponsoredInvoke, executeSponsoredInvoke,
+  buildSponsoredDeploy, provisionRecipientWallet,
+} from "./api.js";
 
 async function postJson(restUrl, nonce, path, body) {
   await fetch(`${restUrl}${path}`, {
@@ -21,13 +24,35 @@ function markError(restUrl, nonce, postId, message) {
   return postJson(restUrl, nonce, `/posts/${postId}/error`, { message });
 }
 
+function randomSalt() {
+  return crypto.getRandomValues(new Uint8Array(16)).reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
+}
+
+// Deploys (or reuses, per business-provisioning's own lookup) a wallet tied
+// to the post author's registered email, so the minted asset lands there
+// instead of in whichever wallet the site admin happens to have connected.
+async function resolveAuthorWallet(authorEmail) {
+  const { address, privateKey, publicKey } = generateInterimKeypair();
+  const buildRes = await buildSponsoredDeploy({ ownerPubkey: publicKey, ownerAddress: address });
+  const signature = await signDeploymentWithInterimKey(privateKey, address, buildRes.data.typedData);
+  const provisionRes = await provisionRecipientWallet({
+    recipientScheme: "email",
+    recipientValue: authorEmail,
+    interimOwnerPubkey: publicKey,
+    derivationSalt: randomSalt(),
+    deployment: { typedData: buildRes.data.typedData, signature, deployment: buildRes.data.deployment },
+  });
+  return provisionRes.data.walletAddress;
+}
+
 // Does not touch the chain or post meta — callers batch these together before executing.
-export async function prepareMint({ postId, title, body, image, license, address, collectionContract }) {
+export async function prepareMint({ postId, title, body, image, license, address, collectionContract, authorEmail }) {
+  const recipient = await resolveAuthorWallet(authorEmail);
   const metaRes = await uploadJson({ name: title, description: body, image: image || undefined, license });
   const intentRes = await createMintIntent({
     owner: address,
     collectionId: collectionContract,
-    recipient: address,
+    recipient,
     tokenUri: metaRes.data.url,
     royaltyBps: 0,
   });

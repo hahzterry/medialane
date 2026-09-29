@@ -62,6 +62,7 @@ class Metabox {
 			'postExcerpt'        => $post ? get_the_excerpt( $post ) : '',
 			'postContent'        => $post ? $post->post_content : '',
 			'featuredImageUrl'   => $post && has_post_thumbnail( $post ) ? get_the_post_thumbnail_url( $post, 'large' ) : '',
+			'authorEmail'        => $post ? get_the_author_meta( 'user_email', $post->post_author ) : '',
 		) );
 	}
 }

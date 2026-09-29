@@ -6,20 +6,32 @@ vi.mock("../../assets/src/api.js", () => ({
   createMintIntent: vi.fn().mockResolvedValue({ data: { calls: [{ contractAddress: "0xc", entrypoint: "mint", calldata: [] }] } }),
   buildSponsoredInvoke: vi.fn().mockResolvedValue({ data: { typedData: { message: { calls: [] } } } }),
   executeSponsoredInvoke: vi.fn().mockResolvedValue({ data: { transactionHash: "0xtx" } }),
+  buildSponsoredDeploy: vi.fn().mockResolvedValue({ data: { typedData: {}, deployment: {}, calls: [] } }),
+  provisionRecipientWallet: vi.fn().mockResolvedValue({ data: { walletAddress: "0xauthorwallet" } }),
 }));
 vi.mock("../../assets/src/wallet.js", () => ({
   signTypedData: vi.fn().mockResolvedValue(["0x1", "0x2"]),
   waitForConfirmation: vi.fn().mockResolvedValue({ isReverted: () => false }),
+  generateInterimKeypair: vi.fn().mockReturnValue({ privateKey: "0xpriv", publicKey: "0xpub", address: "0xinterim" }),
+  signDeploymentWithInterimKey: vi.fn().mockResolvedValue(["0xdsig"]),
 }));
 
 describe("prepareMint", () => {
-  it("uploads metadata and returns the mint calls without touching the chain", async () => {
+  it("provisions the author's wallet by email and mints to it, not to the caller's own address", async () => {
+    const { createMintIntent, provisionRecipientWallet } = await import("../../assets/src/api.js");
+
     const result = await prepareMint({
-      postId: 42, title: "A Post", body: "Body", image: "", license: "CC BY-SA", address: "0xowner",
-      collectionContract: "0xcol",
+      postId: 42, title: "A Post", body: "Body", image: "", license: "CC BY-SA",
+      address: "0xowner", collectionContract: "0xcol", authorEmail: "author@example.com",
     });
+
+    expect(provisionRecipientWallet).toHaveBeenCalledWith(expect.objectContaining({
+      recipientScheme: "email", recipientValue: "author@example.com",
+    }));
+    expect(createMintIntent).toHaveBeenCalledWith(expect.objectContaining({
+      owner: "0xowner", recipient: "0xauthorwallet",
+    }));
     expect(result.postId).toBe(42);
-    expect(result.calls).toHaveLength(1);
   });
 });
 

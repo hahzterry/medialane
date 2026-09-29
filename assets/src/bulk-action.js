@@ -24,7 +24,7 @@ export async function tokenizeBulk(postIds, onProgress) {
     const body = data.contentScope === "full" ? post.content : post.excerpt;
     entries.push(await prepareMint({
       postId, title: post.title, body, image: post.image, license: "All Rights Reserved", address,
-      collectionContract: data.collectionContract,
+      collectionContract: data.collectionContract, authorEmail: post.authorEmail,
     }));
   }
 

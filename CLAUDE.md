@@ -14,7 +14,7 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
 ## Architecture
 
 - PHP holds the Medialane API key. `Settings::get_api_key()` reads a
-  `MEDIALANE_API_KEY` `wp-config.php` constant if defined, or falls back to
+  `TOKENIZE_CONTENT_API_KEY` `wp-config.php` constant if defined, or falls back to
   `wp_options`. `includes/class-rest-proxy.php` forwards allowlisted calls to
   `medialane-backend` with that key attached; the key stays on the server.
   Every backend-forwarding route binds its target path via a closure argument
@@ -28,7 +28,7 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   `Account` via starknet.js's `WalletAccount.connect()`.
 - Minting goes through `medialane-backend`'s paymaster
   (`/v1/paymaster/invoke/{build,execute}`, proxied at
-  `/medialane/v1/paymaster/invoke/{build,execute}`). The caller signs with
+  `/tokenize-content/v1/paymaster/invoke/{build,execute}`). The caller signs with
   their own wallet, using `wallet.js`'s `signTypedData()`, which wraps
   `WalletAccount.signMessage`. The paymaster covers the network fee.
 - A site can hold multiple `mip-erc721` collections, all owned by the same
@@ -39,7 +39,7 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   time it's called — that's the only authority on what actually exists,
   per `medialane-core`'s "the smart contract is the only truth" (`00
   §1`)/"never a second source of truth" (`02 §IV`) principles. `wp_options`
-  (`medialane_collection_labels`) stores *only* a friendly label per
+  (`tokenize_content_collection_labels`) stores *only* a friendly label per
   contract — a name has no on-chain meaning, so that part is legitimate
   local data, same category as a slug. A stored label whose contract isn't
   in the live list doesn't render. `Settings::resolve_collection_for_post()`
@@ -88,13 +88,13 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   never persisted), uses it to sign that wallet's deployment typed data
   (`signDeploymentWithInterimKey()`), and hands the signed deployment to
   `medialane-backend`'s business-provisioning endpoint
-  (`/v1/business/provisioning`, proxied at `/medialane/v1/business/provisioning`)
+  (`/v1/business/provisioning`, proxied at `/tokenize-content/v1/business/provisioning`)
   along with `recipientScheme: "email"` and the author's address. The
   backend deploys the wallet on first use and reuses it on later posts from
   the same author. The mint intent's `owner` stays the connected wallet's
   address, since that's what the chain checks for collection ownership;
   only `recipient` becomes the author's provisioned wallet.
-- Tokenize routes check a dedicated `medialane_tokenize_posts` capability
+- Tokenize routes check a dedicated `tokenize_content_tokenize_posts` capability
   (`Settings::CAP_TOKENIZE`) rather than `manage_options`, granted only to
   Administrator on activation. `RestProxy::check_tokenize_permission()` also
   requires `edit_post` on any route that targets a specific post id.
@@ -105,7 +105,7 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   chain will accept as `owner` for a mint on this site's collection — see
   the "one signer" note below.
 - Every admin screen that enqueues plugin JS localizes the same global name,
-  `medialaneData` (see the `wp_localize_script` calls in `class-settings.php`,
+  `tokenizeContentData` (see the `wp_localize_script` calls in `class-settings.php`,
   `class-metabox.php`, and `class-bulk-action.php`). This works because each
   screen enqueues its own script on its own admin page: settings page, post
   editor, or Posts list.
@@ -154,7 +154,7 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
 ## Common pitfalls
 
 - Route a raw `fetch` to the `medialane-backend` URL from JS through
-  `/wp-json/medialane/v1/*` instead, so the API key stays server-side.
+  `/wp-json/tokenize-content/v1/*` instead, so the API key stays server-side.
 - `assets/dist/*.js` is checked in. There's no build step on activation.
   Run `npm run build` and commit the output after any `assets/src` change.
 - `phpunit -c phpunit.xml.dist` needs `WP_TESTS_DIR` pointed at a real WP

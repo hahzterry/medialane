@@ -48,6 +48,18 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   marked errored, since one on-chain transaction succeeds or fails as a
   unit. The bulk action caps batches at 25 posts, sending larger selections
   as sequential batches.
+- `prepareMint()` mints to a wallet tied to the post author's registered
+  WordPress email, not to the connected wallet's own address. It generates
+  a one-time interim keypair (`wallet.js`'s `generateInterimKeypair()`,
+  never persisted), uses it to sign that wallet's deployment typed data
+  (`signDeploymentWithInterimKey()`), and hands the signed deployment to
+  `medialane-backend`'s business-provisioning endpoint
+  (`/v1/business/provisioning`, proxied at `/medialane/v1/business/provisioning`)
+  along with `recipientScheme: "email"` and the author's address. The
+  backend deploys the wallet on first use and reuses it on later posts from
+  the same author. The mint intent's `owner` stays the connected wallet's
+  address, since that's what the chain checks for collection ownership;
+  only `recipient` becomes the author's provisioned wallet.
 - Tokenize routes check a dedicated `medialane_tokenize_posts` capability
   (`Settings::CAP_TOKENIZE`) rather than `manage_options`. It's granted to
   Administrator on activation, and can be granted to Editor through a

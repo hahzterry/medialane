@@ -10,9 +10,23 @@ vi.mock("starknet", () => ({
   RpcProvider: class {},
   WalletAccount: { connect: (...args) => walletAccountConnect(...args) },
   stark: { signatureToHexArray: (sig) => sig },
+  ec: { starkCurve: {
+    utils: { randomPrivateKey: () => new Uint8Array([1, 2, 3, 4]) },
+    getStarkKey: (priv) => "0xpub" + Array.from(priv).join(""),
+  } },
+  Account: class {
+    constructor(_provider, address, _privateKey) { this.address = address; }
+    async signMessage(typedData) { return ["0xsig1", "0xsig2"]; }
+  },
+}));
+vi.mock("@medialane/sdk/starknet", () => ({
+  computeAccountAddress: (pubkey) => `0xaddr-for-${pubkey}`,
 }));
 
-const { connectWallet, executeCalls, signTypedData, waitForConfirmation } = await import("../../assets/src/wallet.js");
+const {
+  connectWallet, executeCalls, signTypedData, waitForConfirmation,
+  generateInterimKeypair, signDeploymentWithInterimKey,
+} = await import("../../assets/src/wallet.js");
 
 describe("connectWallet", () => {
   beforeEach(() => {
@@ -54,6 +68,22 @@ describe("signTypedData", () => {
 
     expect(signMessage).toHaveBeenCalledWith(typedData);
     expect(signature).toEqual(["0x1", "0x2"]);
+  });
+});
+
+describe("generateInterimKeypair", () => {
+  it("derives a public key and address from a fresh random private key", () => {
+    const keypair = generateInterimKeypair();
+    expect(keypair.privateKey).toBeTruthy();
+    expect(keypair.publicKey).toBe("0xpub1234");
+    expect(keypair.address).toBe("0xaddr-for-0xpub1234");
+  });
+});
+
+describe("signDeploymentWithInterimKey", () => {
+  it("signs the deployment typed data with a throwaway Account built from the interim key", async () => {
+    const signature = await signDeploymentWithInterimKey("0xpriv", "0xaddr", { domain: {}, message: {} });
+    expect(signature).toEqual(["0xsig1", "0xsig2"]);
   });
 });
 

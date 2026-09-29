@@ -1,5 +1,6 @@
 import { getStarknet } from "get-starknet-core";
-import { RpcProvider, WalletAccount, stark } from "starknet";
+import { RpcProvider, WalletAccount, stark, ec, Account } from "starknet";
+import { computeAccountAddress } from "@medialane/sdk/starknet";
 
 export async function connectWallet() {
   const wallets = await getStarknet().getAvailableWallets();
@@ -18,6 +19,22 @@ export async function connectWallet() {
 }
 
 export async function signTypedData(account, typedData) {
+  const signature = await account.signMessage(typedData);
+  return stark.signatureToHexArray(signature);
+}
+
+// Used once, to authorize a newly provisioned author wallet's deployment.
+// Never persisted: the caller uses it immediately and lets it go out of scope.
+export function generateInterimKeypair() {
+  const privateKeyBytes = ec.starkCurve.utils.randomPrivateKey();
+  const privateKey = "0x" + Array.from(privateKeyBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const publicKey = ec.starkCurve.getStarkKey(privateKeyBytes);
+  const address = computeAccountAddress(publicKey);
+  return { privateKey, publicKey, address };
+}
+
+export async function signDeploymentWithInterimKey(privateKey, address, typedData) {
+  const account = new Account(new RpcProvider(), address, privateKey);
   const signature = await account.signMessage(typedData);
   return stark.signatureToHexArray(signature);
 }

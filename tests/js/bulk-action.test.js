@@ -47,7 +47,7 @@ describe("tokenizeBulk", () => {
   it("splits more than 25 posts into multiple batches", async () => {
     const postIds = Array.from({ length: 30 }, (_, i) => String(i + 1));
     global.window.medialaneData.posts = Object.fromEntries(
-      postIds.map((id) => [id, { title: "t", excerpt: "e", content: "c", image: "" }])
+      postIds.map((id) => [id, { title: "t", excerpt: "e", content: "c", image: "", authorEmail: `author${id}@example.com` }])
     );
 
     const { executeSponsoredInvoke } = await import("../../assets/src/api.js");

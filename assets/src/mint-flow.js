@@ -47,6 +47,9 @@ async function resolveAuthorWallet(authorEmail) {
 
 // Does not touch the chain or post meta — callers batch these together before executing.
 export async function prepareMint({ postId, title, body, image, license, address, collectionContract, authorEmail }) {
+  if (!authorEmail) {
+    throw new Error(`Post ${postId}'s author has no registered email. Assign a valid author before tokenizing.`);
+  }
   const recipient = await resolveAuthorWallet(authorEmail);
   const metaRes = await uploadJson({ name: title, description: body, image: image || undefined, license });
   const intentRes = await createMintIntent({

@@ -33,6 +33,13 @@ describe("prepareMint", () => {
     }));
     expect(result.postId).toBe(42);
   });
+
+  it("refuses to mint when the post's author has no registered email", async () => {
+    await expect(prepareMint({
+      postId: 42, title: "A Post", body: "Body", image: "", license: "CC BY-SA",
+      address: "0xowner", collectionContract: "0xcol", authorEmail: "",
+    })).rejects.toThrow("no registered email");
+  });
 });
 
 describe("executeMintBatch", () => {

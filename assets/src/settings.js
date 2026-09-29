@@ -45,7 +45,7 @@ export function collectCategoryMap(rows) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const button = document.getElementById("medialane-connect-wallet");
+  const button = document.getElementById("tokenize-content-connect-wallet");
   if (!button) return;
   button.addEventListener("click", async () => {
     button.disabled = true;
@@ -64,8 +64,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const createCollectionBtn = document.getElementById("medialane-create-collection");
-  const newCollectionLabel = document.getElementById("medialane-new-collection-label");
+  const createCollectionBtn = document.getElementById("tokenize-content-create-collection");
+  const newCollectionLabel = document.getElementById("tokenize-content-new-collection-label");
   if (createCollectionBtn && newCollectionLabel) {
     createCollectionBtn.addEventListener("click", async () => {
       const label = newCollectionLabel.value.trim();
@@ -87,10 +87,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const saveMapBtn = document.getElementById("medialane-save-category-map");
+  const saveMapBtn = document.getElementById("tokenize-content-save-category-map");
   if (saveMapBtn) {
     saveMapBtn.addEventListener("click", async () => {
-      const rows = Array.from(document.querySelectorAll(".medialane-category-collection-select")).map((el) => ({
+      const rows = Array.from(document.querySelectorAll(".tokenize-content-category-collection-select")).map((el) => ({
         categoryId: el.dataset.categoryId,
         value: el.value,
       }));

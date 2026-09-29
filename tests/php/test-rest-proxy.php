@@ -1,6 +1,6 @@
 <?php
 
-use Medialane\Settings;
+use TokenizeContent\Settings;
 
 class Test_Rest_Proxy extends WP_UnitTestCase {
 
@@ -20,7 +20,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 		delete_option( Settings::OPTION_API_KEY );
 
-		$request  = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
+		$request  = new WP_REST_Request( 'POST', '/tokenize-content/v1/intents/mint' );
 		$request->set_body( wp_json_encode( array() ) );
 		$response = $this->server->dispatch( $request );
 
@@ -30,7 +30,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 	public function test_rejects_non_admin() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 
-		$request  = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
+		$request  = new WP_REST_Request( 'POST', '/tokenize-content/v1/intents/mint' );
 		$response = $this->server->dispatch( $request );
 
 		// WP's own rest_authorization_required_code() returns 403 for a
@@ -52,7 +52,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		};
 		add_filter( 'pre_http_request', $intercept, 10, 3 );
 
-		$request = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
+		$request = new WP_REST_Request( 'POST', '/tokenize-content/v1/intents/mint' );
 		$request->set_body( wp_json_encode( array( 'backend_path' => '/v1/paymaster/deploy/execute' ) ) );
 		$this->server->dispatch( $request );
 
@@ -64,7 +64,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 	public function test_editor_without_the_capability_is_rejected() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
 
-		$request  = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
+		$request  = new WP_REST_Request( 'POST', '/tokenize-content/v1/intents/mint' );
 		$response = $this->server->dispatch( $request );
 
 		$this->assertSame( 403, $response->get_status() );
@@ -80,7 +80,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 			return array( 'response' => array( 'code' => 200 ), 'body' => wp_json_encode( array( 'ok' => true ) ) );
 		} );
 
-		$request = new WP_REST_Request( 'POST', '/medialane/v1/intents/mint' );
+		$request = new WP_REST_Request( 'POST', '/tokenize-content/v1/intents/mint' );
 		$request->set_body( wp_json_encode( array() ) );
 		$response = $this->server->dispatch( $request );
 
@@ -96,7 +96,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 		get_role( 'subscriber' )->add_cap( Settings::CAP_TOKENIZE );
 
-		$request  = new WP_REST_Request( 'POST', "/medialane/v1/posts/{$post_id}/minting" );
+		$request  = new WP_REST_Request( 'POST', "/tokenize-content/v1/posts/{$post_id}/minting" );
 		$response = $this->server->dispatch( $request );
 
 		$this->assertSame( 403, $response->get_status() );
@@ -112,8 +112,8 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 			return array( 'response' => array( 'code' => 200 ), 'body' => wp_json_encode( array( 'ok' => true ) ) );
 		}, 10, 3 );
 
-		$this->server->dispatch( new WP_REST_Request( 'POST', '/medialane/v1/paymaster/invoke/build' ) );
-		$this->server->dispatch( new WP_REST_Request( 'POST', '/medialane/v1/paymaster/invoke/execute' ) );
+		$this->server->dispatch( new WP_REST_Request( 'POST', '/tokenize-content/v1/paymaster/invoke/build' ) );
+		$this->server->dispatch( new WP_REST_Request( 'POST', '/tokenize-content/v1/paymaster/invoke/execute' ) );
 
 		$this->assertStringEndsWith( '/v1/paymaster/invoke/build', $captured_urls[0] );
 		$this->assertStringEndsWith( '/v1/paymaster/invoke/execute', $captured_urls[1] );
@@ -129,8 +129,8 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 			return array( 'response' => array( 'code' => 200 ), 'body' => wp_json_encode( array( 'ok' => true ) ) );
 		}, 10, 3 );
 
-		$this->server->dispatch( new WP_REST_Request( 'POST', '/medialane/v1/paymaster/deploy/build' ) );
-		$this->server->dispatch( new WP_REST_Request( 'POST', '/medialane/v1/business/provisioning' ) );
+		$this->server->dispatch( new WP_REST_Request( 'POST', '/tokenize-content/v1/paymaster/deploy/build' ) );
+		$this->server->dispatch( new WP_REST_Request( 'POST', '/tokenize-content/v1/business/provisioning' ) );
 
 		$this->assertStringEndsWith( '/v1/paymaster/deploy/build', $captured_urls[0] );
 		$this->assertStringEndsWith( '/v1/business/provisioning', $captured_urls[1] );
@@ -139,7 +139,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 	public function test_settings_collections_route_saves_a_collection_s_label() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/collections' );
+		$request = new WP_REST_Request( 'POST', '/tokenize-content/v1/settings/collections' );
 		$request->set_body_params( array( 'contract' => '0xaaa11', 'label' => 'Politics' ) );
 		$response = $this->server->dispatch( $request );
 
@@ -150,7 +150,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 	public function test_settings_collections_route_requires_admin_permission() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 
-		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/collections' );
+		$request = new WP_REST_Request( 'POST', '/tokenize-content/v1/settings/collections' );
 		$request->set_body_params( array( 'contract' => '0xaaa11', 'label' => 'Politics' ) );
 		$response = $this->server->dispatch( $request );
 
@@ -160,7 +160,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 	public function test_settings_wallet_route_saves_the_address_immediately() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/wallet' );
+		$request = new WP_REST_Request( 'POST', '/tokenize-content/v1/settings/wallet' );
 		$request->set_body_params( array( 'address' => '0xaaa11' ) );
 		$response = $this->server->dispatch( $request );
 
@@ -171,7 +171,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 	public function test_settings_wallet_route_requires_admin_permission() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 
-		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/wallet' );
+		$request = new WP_REST_Request( 'POST', '/tokenize-content/v1/settings/wallet' );
 		$request->set_body_params( array( 'address' => '0xaaa11' ) );
 		$response = $this->server->dispatch( $request );
 
@@ -182,7 +182,7 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 		$cat_id = $this->factory->category->create();
 
-		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/category-map' );
+		$request = new WP_REST_Request( 'POST', '/tokenize-content/v1/settings/category-map' );
 		$request->set_body_params( array( 'map' => array( (string) $cat_id => '0xbbb22' ) ) );
 		$response = $this->server->dispatch( $request );
 

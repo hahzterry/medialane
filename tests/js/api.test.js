@@ -7,7 +7,7 @@ import {
 
 describe("api client", () => {
   beforeEach(() => {
-    global.window = { medialaneData: { restUrl: "/wp-json/medialane/v1", nonce: "abc" } };
+    global.window = { tokenizeContentData: { restUrl: "/wp-json/tokenize-content/v1", nonce: "abc" } };
   });
 
   it("posts mint intent params and returns parsed body", async () => {
@@ -18,7 +18,7 @@ describe("api client", () => {
     const result = await createMintIntent({ owner: "0x1", collectionId: "0x2", recipient: "0x1", tokenUri: "ipfs://x", royaltyBps: 0 });
     expect(result.data.calls).toHaveLength(1);
     expect(global.fetch).toHaveBeenCalledWith(
-      "/wp-json/medialane/v1/intents/mint",
+      "/wp-json/tokenize-content/v1/intents/mint",
       expect.objectContaining({ method: "POST" })
     );
   });

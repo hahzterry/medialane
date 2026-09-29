@@ -1,8 +1,8 @@
 <?php
 
-use Medialane\BulkAction;
-use Medialane\PostMeta;
-use Medialane\Settings;
+use TokenizeContent\BulkAction;
+use TokenizeContent\PostMeta;
+use TokenizeContent\Settings;
 
 class Test_Bulk_Action extends WP_UnitTestCase {
 

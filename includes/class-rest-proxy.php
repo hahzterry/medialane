@@ -1,6 +1,6 @@
 <?php
 
-namespace Medialane;
+namespace TokenizeContent;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class RestProxy {
 
-	const NAMESPACE = 'medialane/v1';
+	const NAMESPACE = 'tokenize-content/v1';
 
 	public static function register_routes() {
 		register_rest_route( self::NAMESPACE, '/metadata/upload', array(
@@ -173,7 +173,7 @@ class RestProxy {
 			return $key;
 		}
 		$owner = (string) $request->get_param( 'owner' );
-		$response = wp_remote_get( MEDIALANE_BACKEND_URL . '/v1/collections?owner=' . rawurlencode( $owner ), array(
+		$response = wp_remote_get( TOKENIZE_CONTENT_BACKEND_URL . '/v1/collections?owner=' . rawurlencode( $owner ), array(
 			'headers' => array( 'x-api-key' => $key ),
 			'timeout' => 15,
 		) );
@@ -190,7 +190,7 @@ class RestProxy {
 		}
 		$post_id = (int) $request->get_param( 'id' );
 		if ( $post_id > 0 && ! current_user_can( 'edit_post', $post_id ) ) {
-			return new \WP_Error( 'medialane_forbidden', __( "You can't tokenize a post you don't have edit access to.", 'medialane' ), array( 'status' => 403 ) );
+			return new \WP_Error( 'tokenize_content_forbidden', __( "You can't tokenize a post you don't have edit access to.", 'tokenize-content' ), array( 'status' => 403 ) );
 		}
 		return true;
 	}
@@ -198,7 +198,7 @@ class RestProxy {
 	private static function api_key_or_error() {
 		$key = Settings::get_api_key();
 		if ( ! $key ) {
-			return new \WP_Error( 'medialane_no_api_key', __( 'No Medialane API key configured.', 'medialane' ), array( 'status' => 400 ) );
+			return new \WP_Error( 'tokenize_content_no_api_key', __( 'No Medialane API key configured.', 'tokenize-content' ), array( 'status' => 400 ) );
 		}
 		return $key;
 	}
@@ -208,7 +208,7 @@ class RestProxy {
 		if ( is_wp_error( $key ) ) {
 			return $key;
 		}
-		$response = wp_remote_post( MEDIALANE_BACKEND_URL . $backend_path, array(
+		$response = wp_remote_post( TOKENIZE_CONTENT_BACKEND_URL . $backend_path, array(
 			'headers' => array(
 				'Content-Type' => 'application/json',
 				'x-api-key'    => $key,
@@ -226,7 +226,7 @@ class RestProxy {
 		}
 		$files = $request->get_file_params();
 		if ( empty( $files['file'] ) ) {
-			return new \WP_Error( 'medialane_no_file', __( 'No file provided.', 'medialane' ), array( 'status' => 400 ) );
+			return new \WP_Error( 'tokenize_content_no_file', __( 'No file provided.', 'tokenize-content' ), array( 'status' => 400 ) );
 		}
 		$file = $files['file'];
 		// Sanitize the filename before it goes into a hand-built multipart header —
@@ -240,7 +240,7 @@ class RestProxy {
 			. "Content-Type: {$content_type}\r\n\r\n"
 			. file_get_contents( $file['tmp_name'] ) . "\r\n"
 			. "--{$boundary}--\r\n";
-		$response = wp_remote_post( MEDIALANE_BACKEND_URL . '/v1/metadata/upload-file', array(
+		$response = wp_remote_post( TOKENIZE_CONTENT_BACKEND_URL . '/v1/metadata/upload-file', array(
 			'headers' => array(
 				'Content-Type' => "multipart/form-data; boundary={$boundary}",
 				'x-api-key'    => $key,
@@ -258,7 +258,7 @@ class RestProxy {
 		}
 		$contract = $request->get_param( 'contract' );
 		$token_id = $request->get_param( 'tokenId' );
-		$response = wp_remote_get( MEDIALANE_BACKEND_URL . "/v1/tokens/{$contract}/{$token_id}", array(
+		$response = wp_remote_get( TOKENIZE_CONTENT_BACKEND_URL . "/v1/tokens/{$contract}/{$token_id}", array(
 			'headers' => array( 'x-api-key' => $key ),
 			'timeout' => 15,
 		) );
@@ -267,13 +267,13 @@ class RestProxy {
 
 	private static function relay( $response ) {
 		if ( is_wp_error( $response ) ) {
-			return new \WP_Error( 'medialane_upstream_error', $response->get_error_message(), array( 'status' => 502 ) );
+			return new \WP_Error( 'tokenize_content_upstream_error', $response->get_error_message(), array( 'status' => 502 ) );
 		}
 		$status = wp_remote_retrieve_response_code( $response );
 		$body   = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( $status < 200 || $status >= 300 ) {
-			$message = is_array( $body ) && ! empty( $body['error'] ) ? $body['error'] : __( 'Medialane backend request failed.', 'medialane' );
-			return new \WP_Error( 'medialane_backend_error', $message, array( 'status' => $status ) );
+			$message = is_array( $body ) && ! empty( $body['error'] ) ? $body['error'] : __( 'Medialane backend request failed.', 'tokenize-content' );
+			return new \WP_Error( 'tokenize_content_backend_error', $message, array( 'status' => $status ) );
 		}
 		return rest_ensure_response( $body );
 	}

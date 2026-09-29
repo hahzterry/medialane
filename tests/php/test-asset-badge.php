@@ -1,7 +1,7 @@
 <?php
 
-use Medialane\AssetBadge;
-use Medialane\PostMeta;
+use TokenizeContent\AssetBadge;
+use TokenizeContent\PostMeta;
 
 class Test_Asset_Badge extends WP_UnitTestCase {
 

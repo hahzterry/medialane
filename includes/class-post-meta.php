@@ -1,6 +1,6 @@
 <?php
 
-namespace Medialane;
+namespace TokenizeContent;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -12,12 +12,12 @@ class PostMeta {
 	const STATUS_MINTED  = 'minted';
 	const STATUS_ERROR   = 'error';
 
-	const KEY_STATUS   = '_medialane_status';
-	const KEY_TOKEN_ID = '_medialane_token_id';
-	const KEY_TX_HASH  = '_medialane_tx_hash';
-	const KEY_CONTRACT = '_medialane_contract';
-	const KEY_LICENSE  = '_medialane_license';
-	const KEY_ERROR    = '_medialane_error';
+	const KEY_STATUS   = '_tokenize_content_status';
+	const KEY_TOKEN_ID = '_tokenize_content_token_id';
+	const KEY_TX_HASH  = '_tokenize_content_tx_hash';
+	const KEY_CONTRACT = '_tokenize_content_contract';
+	const KEY_LICENSE  = '_tokenize_content_license';
+	const KEY_ERROR    = '_tokenize_content_error';
 
 	public static function register() {
 		$string_field = array(

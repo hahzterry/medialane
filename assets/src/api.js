@@ -1,9 +1,9 @@
 function base() {
-  return (window.medialaneData && window.medialaneData.restUrl) || "/wp-json/medialane/v1";
+  return (window.tokenizeContentData && window.tokenizeContentData.restUrl) || "/wp-json/tokenize-content/v1";
 }
 
 function nonce() {
-  return (window.medialaneData && window.medialaneData.nonce) || "";
+  return (window.tokenizeContentData && window.tokenizeContentData.nonce) || "";
 }
 
 async function request(path, opts = {}) {

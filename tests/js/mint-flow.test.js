@@ -64,7 +64,7 @@ describe("executeMintBatch", () => {
   it("throws without a collection, before marking anything", async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
     await expect(
-      executeMintBatch({ restUrl: "/wp-json/medialane/v1", nonce: "abc", account: {}, address: "0xowner", collectionContract: "", entries: [] })
+      executeMintBatch({ restUrl: "/wp-json/tokenize-content/v1", nonce: "abc", account: {}, address: "0xowner", collectionContract: "", entries: [] })
     ).rejects.toThrow("No collection configured");
     expect(global.fetch).not.toHaveBeenCalled();
   });
@@ -76,7 +76,7 @@ describe("executeMintBatch", () => {
       { postId: 2, license: "CC BY-SA", calls: [{ contractAddress: "0xc", entrypoint: "mint", calldata: [] }] },
     ];
     const results = await executeMintBatch({
-      restUrl: "/wp-json/medialane/v1", nonce: "abc", account: {}, address: "0xowner",
+      restUrl: "/wp-json/tokenize-content/v1", nonce: "abc", account: {}, address: "0xowner",
       collectionContract: "0xcol", entries,
     });
     expect(results).toEqual([
@@ -99,13 +99,13 @@ describe("executeMintBatch", () => {
 
     const entries = [{ postId: 1, license: "CC BY-SA", calls: [{ contractAddress: "0xc", entrypoint: "mint", calldata: [] }] }];
     const results = await executeMintBatch({
-      restUrl: "/wp-json/medialane/v1", nonce: "abc", account: {}, address: "0xowner",
+      restUrl: "/wp-json/tokenize-content/v1", nonce: "abc", account: {}, address: "0xowner",
       collectionContract: "0xcol", entries,
     });
 
     expect(results).toEqual([{ postId: 1, error: "execution failed" }]);
     const paths = global.fetch.mock.calls.map((call) => call[0]);
-    expect(paths).not.toContain("/wp-json/medialane/v1/posts/1/minted");
-    expect(paths).toContain("/wp-json/medialane/v1/posts/1/error");
+    expect(paths).not.toContain("/wp-json/tokenize-content/v1/posts/1/minted");
+    expect(paths).toContain("/wp-json/tokenize-content/v1/posts/1/error");
   });
 });

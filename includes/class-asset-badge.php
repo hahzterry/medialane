@@ -1,6 +1,6 @@
 <?php
 
-namespace Medialane;
+namespace TokenizeContent;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -37,18 +37,18 @@ class AssetBadge {
 		ob_start();
 		self::print_styles_once();
 		?>
-		<div class="medialane-asset-badge">
+		<div class="tokenize-content-asset-badge">
 			<?php if ( $image ) : ?>
-				<div class="medialane-asset-badge__image"><?php echo $image; ?></div>
+				<div class="tokenize-content-asset-badge__image"><?php echo $image; ?></div>
 			<?php endif; ?>
-			<div class="medialane-asset-badge__body">
-				<p class="medialane-asset-badge__eyebrow"><?php esc_html_e( 'IP Protected & Tokenized', 'medialane' ); ?></p>
-				<p class="medialane-asset-badge__title"><?php echo esc_html( get_the_title( $post_id ) ); ?></p>
+			<div class="tokenize-content-asset-badge__body">
+				<p class="tokenize-content-asset-badge__eyebrow"><?php esc_html_e( 'IP Protected & Tokenized', 'tokenize-content' ); ?></p>
+				<p class="tokenize-content-asset-badge__title"><?php echo esc_html( get_the_title( $post_id ) ); ?></p>
 				<?php if ( $license ) : ?>
-					<p class="medialane-asset-badge__license"><?php echo esc_html( $license ); ?></p>
+					<p class="tokenize-content-asset-badge__license"><?php echo esc_html( $license ); ?></p>
 				<?php endif; ?>
-				<a class="medialane-asset-badge__link" href="<?php echo esc_url( $asset_url ); ?>" target="_blank" rel="noopener noreferrer">
-					<?php esc_html_e( 'View this asset on Medialane', 'medialane' ); ?>
+				<a class="tokenize-content-asset-badge__link" href="<?php echo esc_url( $asset_url ); ?>" target="_blank" rel="noopener noreferrer">
+					<?php esc_html_e( 'View this asset on Medialane', 'tokenize-content' ); ?>
 				</a>
 			</div>
 		</div>
@@ -64,12 +64,12 @@ class AssetBadge {
 		$printed = true;
 		?>
 		<style>
-			.medialane-asset-badge { display: flex; gap: 1.25rem; align-items: center; margin: 2rem 0; padding: 1.25rem; border: 1px solid #e2e2e2; border-radius: 8px; background: #fafafa; }
-			.medialane-asset-badge__image img { display: block; width: 96px; height: 96px; object-fit: cover; border-radius: 6px; }
-			.medialane-asset-badge__eyebrow { margin: 0 0 0.25rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b6b6b; }
-			.medialane-asset-badge__title { margin: 0 0 0.25rem; font-weight: 600; }
-			.medialane-asset-badge__license { margin: 0 0 0.5rem; font-size: 0.875rem; color: #6b6b6b; }
-			.medialane-asset-badge__link { font-size: 0.875rem; font-weight: 600; text-decoration: none; }
+			.tokenize-content-asset-badge { display: flex; gap: 1.25rem; align-items: center; margin: 2rem 0; padding: 1.25rem; border: 1px solid #e2e2e2; border-radius: 8px; background: #fafafa; }
+			.tokenize-content-asset-badge__image img { display: block; width: 96px; height: 96px; object-fit: cover; border-radius: 6px; }
+			.tokenize-content-asset-badge__eyebrow { margin: 0 0 0.25rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b6b6b; }
+			.tokenize-content-asset-badge__title { margin: 0 0 0.25rem; font-weight: 600; }
+			.tokenize-content-asset-badge__license { margin: 0 0 0.5rem; font-size: 0.875rem; color: #6b6b6b; }
+			.tokenize-content-asset-badge__link { font-size: 0.875rem; font-weight: 600; text-decoration: none; }
 		</style>
 		<?php
 	}

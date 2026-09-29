@@ -1,6 +1,6 @@
 <?php
 
-use Medialane\Settings;
+use TokenizeContent\Settings;
 
 class Test_Settings extends WP_UnitTestCase {
 
@@ -17,8 +17,8 @@ class Test_Settings extends WP_UnitTestCase {
 
 	public function test_get_api_key_prefers_the_constant_when_defined() {
 		update_option( Settings::OPTION_API_KEY, 'from-the-database' );
-		if ( ! defined( 'MEDIALANE_API_KEY' ) ) {
-			define( 'MEDIALANE_API_KEY', 'from-wp-config' );
+		if ( ! defined( 'TOKENIZE_CONTENT_API_KEY' ) ) {
+			define( 'TOKENIZE_CONTENT_API_KEY', 'from-wp-config' );
 		}
 		$this->assertSame( 'from-wp-config', Settings::get_api_key() );
 	}

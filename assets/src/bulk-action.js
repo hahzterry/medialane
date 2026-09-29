@@ -14,7 +14,7 @@ function chunk(array, size) {
 // entries are grouped by their resolved collection first, then each
 // group is chunked and executed as its own batch.
 export async function tokenizeBulk(postIds, onProgress) {
-  const data = window.medialaneData;
+  const data = window.tokenizeContentData;
   const { address, account } = await connectWallet();
 
   const entriesByCollection = new Map();
@@ -57,7 +57,7 @@ const STATUS_LABEL = {
 
 export function buildStatusPanel(postIds, data) {
   const panel = document.createElement("div");
-  panel.id = "medialane-bulk-status";
+  panel.id = "tokenize-content-bulk-status";
   panel.className = "notice notice-info";
   panel.style.padding = "12px 16px";
 
@@ -94,7 +94,7 @@ document.addEventListener("submit", (e) => {
   const form = e.target.closest && e.target.closest("#posts-filter");
   if (!form) return;
   const select = form.querySelector('select[name="action"], select[name="action2"]');
-  if (!select || select.value !== "medialane_tokenize") return;
+  if (!select || select.value !== "tokenize_content_tokenize") return;
   e.preventDefault();
 
   const ids = Array.from(form.querySelectorAll('input[name="post[]"]:checked')).map((el) => el.value);
@@ -103,7 +103,7 @@ document.addEventListener("submit", (e) => {
     return;
   }
 
-  const data = window.medialaneData;
+  const data = window.tokenizeContentData;
   const status = buildStatusPanel(ids, data);
   const heading = document.querySelector(".wp-heading-inline") || document.querySelector(".wrap h1");
   if (heading && heading.parentNode) {

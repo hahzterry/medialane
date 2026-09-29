@@ -21,11 +21,11 @@ vi.mock("../../assets/src/api.js", () => ({
 describe("tokenizeBulk", () => {
   beforeEach(() => {
     global.window = {
-      medialaneData: {
+      tokenizeContentData: {
         collectionContract: "0xcol",
         contentScope: "excerpt",
         licenseDefault: "CC BY-SA",
-        restUrl: "/wp-json/medialane/v1",
+        restUrl: "/wp-json/tokenize-content/v1",
         nonce: "abc",
         posts: {
           1: { title: "A", excerpt: "a", content: "aa", image: "", authorEmail: "a@example.com" },
@@ -49,7 +49,7 @@ describe("tokenizeBulk", () => {
   it("uses the site's configured default license instead of a hardcoded one", async () => {
     const { createMintIntent } = await import("../../assets/src/api.js");
     createMintIntent.mockClear();
-    global.window.medialaneData.licenseDefault = "CC BY-SA";
+    global.window.tokenizeContentData.licenseDefault = "CC BY-SA";
 
     await tokenizeBulk(["1"], () => {});
 
@@ -60,7 +60,7 @@ describe("tokenizeBulk", () => {
   });
 
   it("groups posts by their resolved collection into separate batches", async () => {
-    global.window.medialaneData.posts = {
+    global.window.tokenizeContentData.posts = {
       1: { title: "A", excerpt: "a", content: "aa", image: "", authorEmail: "a@example.com", collectionContract: "0xnews" },
       2: { title: "B", excerpt: "b", content: "bb", image: "", authorEmail: "b@example.com", collectionContract: "0xsports" },
     };
@@ -76,8 +76,8 @@ describe("tokenizeBulk", () => {
   });
 
   it("throws when a post has no resolvable collection at all", async () => {
-    global.window.medialaneData.collectionContract = "";
-    global.window.medialaneData.posts = {
+    global.window.tokenizeContentData.collectionContract = "";
+    global.window.tokenizeContentData.posts = {
       1: { title: "A", excerpt: "a", content: "aa", image: "", authorEmail: "a@example.com", collectionContract: "" },
     };
     await expect(tokenizeBulk(["1"], () => {})).rejects.toThrow("No collection configured");
@@ -85,7 +85,7 @@ describe("tokenizeBulk", () => {
 
   it("splits more than 25 posts into multiple batches", async () => {
     const postIds = Array.from({ length: 30 }, (_, i) => String(i + 1));
-    global.window.medialaneData.posts = Object.fromEntries(
+    global.window.tokenizeContentData.posts = Object.fromEntries(
       postIds.map((id) => [id, { title: "t", excerpt: "e", content: "c", image: "", authorEmail: `author${id}@example.com` }])
     );
 

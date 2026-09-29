@@ -1,6 +1,6 @@
 <?php
 
-namespace Medialane;
+namespace TokenizeContent;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -15,7 +15,7 @@ class BulkAction {
 	}
 
 	public static function add_bulk_action( array $actions ): array {
-		$actions['medialane_tokenize'] = __( 'Tokenize with Medialane', 'medialane' );
+		$actions['tokenize_content_tokenize'] = __( 'Tokenize with Medialane', 'tokenize-content' );
 		return $actions;
 	}
 
@@ -46,7 +46,7 @@ class BulkAction {
 					'%d published post has not been tokenized yet with Medialane. Select it below and use the "Tokenize with Medialane" bulk action.',
 					'%d published posts have not been tokenized yet with Medialane. Select them below and use the "Tokenize with Medialane" bulk action.',
 					$count,
-					'medialane'
+					'tokenize-content'
 				),
 				$count
 			) )
@@ -71,11 +71,11 @@ class BulkAction {
 				'collectionContract' => Settings::resolve_collection_for_post( $p->ID, $live_collections ),
 			);
 		}
-		wp_enqueue_script( 'medialane-bulk-action', MEDIALANE_PLUGIN_URL . 'assets/dist/bulk-action.js', array(), MEDIALANE_PLUGIN_VERSION, true );
+		wp_enqueue_script( 'tokenize-content-bulk-action', TOKENIZE_CONTENT_PLUGIN_URL . 'assets/dist/bulk-action.js', array(), TOKENIZE_CONTENT_PLUGIN_VERSION, true );
 		// Same global name as class-metabox.php/class-settings.php use — safe
 		// because each only enqueues on its own mutually exclusive admin screen.
-		wp_localize_script( 'medialane-bulk-action', 'medialaneData', array(
-			'restUrl'            => esc_url_raw( rest_url( 'medialane/v1' ) ),
+		wp_localize_script( 'tokenize-content-bulk-action', 'tokenizeContentData', array(
+			'restUrl'            => esc_url_raw( rest_url( 'tokenize-content/v1' ) ),
 			'nonce'              => wp_create_nonce( 'wp_rest' ),
 			'collectionContract' => Settings::get_collection_contract(),
 			'contentScope'       => Settings::get_content_scope(),

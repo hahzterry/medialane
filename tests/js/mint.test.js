@@ -21,7 +21,7 @@ vi.mock("../../assets/src/api.js", () => ({
 describe("tokenizePost", () => {
   beforeEach(() => {
     global.window = {
-      medialaneData: {
+      tokenizeContentData: {
         collectionContract: "0xcol",
         contentScope: "excerpt",
         postTitle: "Hello",
@@ -29,14 +29,14 @@ describe("tokenizePost", () => {
         postContent: "Full body",
         featuredImageUrl: "",
         authorEmail: "author@example.com",
-        restUrl: "/wp-json/medialane/v1",
+        restUrl: "/wp-json/tokenize-content/v1",
         nonce: "abc",
       },
     };
     global.document = {
       getElementById: (id) => {
-        if (id === "medialane-license") return { value: "All Rights Reserved" };
-        if (id === "medialane-license-custom") return { value: "" };
+        if (id === "tokenize-content-license") return { value: "All Rights Reserved" };
+        if (id === "tokenize-content-license-custom") return { value: "" };
         return null;
       },
     };
@@ -44,7 +44,7 @@ describe("tokenizePost", () => {
   });
 
   it("throws when no collection is configured", async () => {
-    global.window.medialaneData.collectionContract = "";
+    global.window.tokenizeContentData.collectionContract = "";
     await expect(tokenizePost(1)).rejects.toThrow("No collection configured");
   });
 
@@ -52,7 +52,7 @@ describe("tokenizePost", () => {
     const txHash = await tokenizePost(1);
     expect(txHash).toBe("0xtx");
     expect(global.fetch).toHaveBeenCalledWith(
-      "/wp-json/medialane/v1/posts/1/minted",
+      "/wp-json/tokenize-content/v1/posts/1/minted",
       expect.objectContaining({ method: "POST" })
     );
   });

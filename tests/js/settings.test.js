@@ -18,7 +18,7 @@ const { pollForCollection, createAndRegisterCollection, collectCategoryMap } = a
 
 describe("pollForCollection", () => {
   beforeEach(() => {
-    global.window = { medialaneData: { restUrl: "/wp-json/medialane/v1", nonce: "abc" } };
+    global.window = { tokenizeContentData: { restUrl: "/wp-json/tokenize-content/v1", nonce: "abc" } };
   });
 
   it("returns the first collection's real contractAddress field once the list is non-empty", async () => {

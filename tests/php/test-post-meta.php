@@ -1,6 +1,6 @@
 <?php
 
-use Medialane\PostMeta;
+use TokenizeContent\PostMeta;
 
 class Test_Post_Meta extends WP_UnitTestCase {
 

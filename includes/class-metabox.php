@@ -1,6 +1,6 @@
 <?php
 
-namespace Medialane;
+namespace TokenizeContent;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -14,23 +14,23 @@ class Metabox {
 	}
 
 	public static function add() {
-		add_meta_box( 'medialane-mint', __( 'Tokenize & Protect', 'medialane' ), array( __CLASS__, 'render' ), 'post', 'side', 'default' );
+		add_meta_box( 'tokenize-content-mint', __( 'Tokenize & Protect', 'tokenize-content' ), array( __CLASS__, 'render' ), 'post', 'side', 'default' );
 	}
 
 	public static function render( \WP_Post $post ) {
 		$status = PostMeta::get_status( $post->ID );
 		?>
-		<div id="medialane-metabox" data-post-id="<?php echo esc_attr( $post->ID ); ?>" data-status="<?php echo esc_attr( $status ); ?>">
-			<div class="medialane-metabox-body">
+		<div id="tokenize-content-metabox" data-post-id="<?php echo esc_attr( $post->ID ); ?>" data-status="<?php echo esc_attr( $status ); ?>">
+			<div class="tokenize-content-metabox-body">
 				<?php if ( PostMeta::STATUS_MINTED === $status ) : ?>
-					<p><?php esc_html_e( 'Minted', 'medialane' ); ?></p>
-					<p><a href="https://voyager.online/tx/<?php echo esc_attr( get_post_meta( $post->ID, PostMeta::KEY_TX_HASH, true ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View transaction', 'medialane' ); ?></a></p>
+					<p><?php esc_html_e( 'Minted', 'tokenize-content' ); ?></p>
+					<p><a href="https://voyager.online/tx/<?php echo esc_attr( get_post_meta( $post->ID, PostMeta::KEY_TX_HASH, true ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View transaction', 'tokenize-content' ); ?></a></p>
 				<?php else : ?>
 					<?php $collections = Settings::fetch_live_collections(); ?>
 					<?php if ( count( $collections ) > 1 ) : ?>
 						<p>
-							<label for="medialane-collection"><?php esc_html_e( 'Collection', 'medialane' ); ?></label>
-							<select id="medialane-collection">
+							<label for="tokenize-content-collection"><?php esc_html_e( 'Collection', 'tokenize-content' ); ?></label>
+							<select id="tokenize-content-collection">
 								<?php foreach ( $collections as $collection ) : ?>
 									<option value="<?php echo esc_attr( $collection['contract'] ); ?>" <?php selected( Settings::resolve_collection_for_post( $post->ID, $collections ), $collection['contract'] ); ?>><?php echo esc_html( $collection['label'] ); ?></option>
 								<?php endforeach; ?>
@@ -38,17 +38,17 @@ class Metabox {
 						</p>
 					<?php endif; ?>
 					<p>
-						<label for="medialane-license"><?php esc_html_e( 'License', 'medialane' ); ?></label>
-						<select id="medialane-license">
+						<label for="tokenize-content-license"><?php esc_html_e( 'License', 'tokenize-content' ); ?></label>
+						<select id="tokenize-content-license">
 							<?php foreach ( Settings::LICENSE_PRESETS as $preset ) : ?>
 								<option value="<?php echo esc_attr( $preset ); ?>" <?php selected( Settings::get_license_default(), $preset ); ?>><?php echo esc_html( $preset ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</p>
-					<p><textarea id="medialane-license-custom" placeholder="<?php esc_attr_e( 'Custom license terms (used if License = Custom)', 'medialane' ); ?>" style="display:none;width:100%;"></textarea></p>
-					<button type="button" class="button button-primary" id="medialane-tokenize-btn"><?php esc_html_e( 'Tokenize Post', 'medialane' ); ?></button>
+					<p><textarea id="tokenize-content-license-custom" placeholder="<?php esc_attr_e( 'Custom license terms (used if License = Custom)', 'tokenize-content' ); ?>" style="display:none;width:100%;"></textarea></p>
+					<button type="button" class="button button-primary" id="tokenize-content-tokenize-btn"><?php esc_html_e( 'Tokenize Post', 'tokenize-content' ); ?></button>
 					<?php if ( PostMeta::STATUS_ERROR === $status ) : ?>
-						<p class="medialane-error" style="color:#b32d2e;"><?php echo esc_html( PostMeta::get_error( $post->ID ) ); ?></p>
+						<p class="tokenize-content-error" style="color:#b32d2e;"><?php echo esc_html( PostMeta::get_error( $post->ID ) ); ?></p>
 					<?php endif; ?>
 				<?php endif; ?>
 			</div>
@@ -61,10 +61,10 @@ class Metabox {
 			return;
 		}
 		global $post;
-		wp_enqueue_script( 'medialane-metabox', MEDIALANE_PLUGIN_URL . 'assets/dist/metabox.js', array(), MEDIALANE_PLUGIN_VERSION, true );
+		wp_enqueue_script( 'tokenize-content-metabox', TOKENIZE_CONTENT_PLUGIN_URL . 'assets/dist/metabox.js', array(), TOKENIZE_CONTENT_PLUGIN_VERSION, true );
 		$live_collections = Settings::fetch_live_collections();
-		wp_localize_script( 'medialane-metabox', 'medialaneData', array(
-			'restUrl'            => esc_url_raw( rest_url( 'medialane/v1' ) ),
+		wp_localize_script( 'tokenize-content-metabox', 'tokenizeContentData', array(
+			'restUrl'            => esc_url_raw( rest_url( 'tokenize-content/v1' ) ),
 			'nonce'              => wp_create_nonce( 'wp_rest' ),
 			'walletAddress'      => Settings::get_wallet_address(),
 			'collectionContract' => $post ? Settings::resolve_collection_for_post( $post->ID, $live_collections ) : Settings::get_default_collection(),

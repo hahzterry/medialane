@@ -5,9 +5,9 @@ if ( ! $_tests_dir ) {
 }
 require_once $_tests_dir . '/includes/functions.php';
 
-function _medialane_manually_load_plugin() {
-	require dirname( dirname( __DIR__ ) ) . '/medialane-wordpress.php';
+function _tokenize_content_manually_load_plugin() {
+	require dirname( dirname( __DIR__ ) ) . '/tokenize-content.php';
 }
-tests_add_filter( 'muplugins_loaded', '_medialane_manually_load_plugin' );
+tests_add_filter( 'muplugins_loaded', '_tokenize_content_manually_load_plugin' );
 
 require $_tests_dir . '/includes/bootstrap.php';

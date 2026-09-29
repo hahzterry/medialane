@@ -14,7 +14,7 @@ class Metabox {
 	}
 
 	public static function add() {
-		add_meta_box( 'medialane-mint', __( 'Medialane', 'medialane' ), array( __CLASS__, 'render' ), 'post', 'side', 'default' );
+		add_meta_box( 'medialane-mint', __( 'Tokenize & Protect', 'medialane' ), array( __CLASS__, 'render' ), 'post', 'side', 'default' );
 	}
 
 	public static function render( \WP_Post $post ) {

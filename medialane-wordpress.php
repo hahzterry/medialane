@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Medialane
- * Description: Tokenize WordPress posts as Medialane IP assets (mip-erc721).
+ * Plugin Name: Tokenize, Protect & License Your Content
+ * Description: Turn your posts into protected, licensed IP assets with Medialane. Prove authorship, set clear licensing terms, and keep control of how your content is used.
  * Version: 0.2.0
  * Requires PHP: 7.4
  * Requires at least: 6.0

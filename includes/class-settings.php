@@ -44,8 +44,8 @@ class Settings {
 
 	public static function add_settings_page() {
 		add_options_page(
-			__( 'Medialane', 'medialane' ),
-			__( 'Medialane', 'medialane' ),
+			__( 'Tokenize, Protect & License Your Content', 'medialane' ),
+			__( 'Tokenize & Protect', 'medialane' ),
 			'manage_options',
 			'medialane-settings',
 			array( __CLASS__, 'render_settings_page' )
@@ -227,7 +227,28 @@ class Settings {
 		$wallet_connected  = (bool) self::get_wallet_address();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Medialane Settings', 'medialane' ); ?></h1>
+			<h1><?php esc_html_e( 'Tokenize, Protect & License Your Content', 'medialane' ); ?></h1>
+			<p style="max-width:640px;font-size:14px;">
+				<?php esc_html_e( 'This plugin turns your posts into protected IP assets through Medialane. Each tokenized post carries a permanent, checkable record of who wrote it, plus a clear license that says what other people are allowed to do with it.', 'medialane' ); ?>
+			</p>
+
+			<div class="card" style="max-width:640px;margin:16px 0;padding:1px 20px 20px;">
+				<h2><?php esc_html_e( 'What you get', 'medialane' ); ?></h2>
+				<ul style="list-style:disc;padding-left:20px;">
+					<li><?php esc_html_e( 'Proof of authorship. A permanent, public record of who wrote a post and when, independent of this site staying online.', 'medialane' ); ?></li>
+					<li><?php esc_html_e( 'Real licensing terms. Choose a Creative Commons preset or reserve all rights, plus a policy on AI training use, applied automatically when a post is tokenized.', 'medialane' ); ?></li>
+					<li><?php esc_html_e( 'No wallet needed for your writers. Only the site admin connects one, once. Authors are identified by their WordPress email and never have to do anything themselves.', 'medialane' ); ?></li>
+					<li><?php esc_html_e( 'A public badge on every tokenized post, linking to its permanent record so readers can verify it themselves.', 'medialane' ); ?></li>
+				</ul>
+				<h2><?php esc_html_e( 'How it works', 'medialane' ); ?></h2>
+				<ol style="padding-left:20px;">
+					<li><?php esc_html_e( 'Add your Medialane API key below.', 'medialane' ); ?></li>
+					<li><?php esc_html_e( 'Connect the wallet that will manage tokenization for this site.', 'medialane' ); ?></li>
+					<li><?php esc_html_e( 'Tokenize a post from its editor screen, or several at once from the Posts list.', 'medialane' ); ?></li>
+				</ol>
+			</div>
+
+			<h2><?php esc_html_e( 'API Key', 'medialane' ); ?></h2>
 			<p>
 				<?php
 				printf(
@@ -270,6 +291,12 @@ class Settings {
 				return;
 			endif;
 			?>
+
+			<p><?php echo wp_kses_post( sprintf(
+				/* translators: %s: link to the Posts list */
+				__( 'Setup is complete. Head to %s to tokenize a post.', 'medialane' ),
+				'<a href="' . esc_url( admin_url( 'edit.php' ) ) . '">' . esc_html__( 'Posts', 'medialane' ) . '</a>'
+			) ); ?></p>
 
 			<h2><?php esc_html_e( 'Tokenization defaults', 'medialane' ); ?></h2>
 			<form method="post" action="options.php">

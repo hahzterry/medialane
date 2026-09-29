@@ -23,6 +23,28 @@ class Test_Post_Meta extends WP_UnitTestCase {
 		$this->assertSame( '0xabc', get_post_meta( $post_id, PostMeta::KEY_TX_HASH, true ) );
 	}
 
+	public function test_accessors_read_back_the_saved_minted_fields() {
+		$post_id = $this->factory->post->create();
+		PostMeta::save_minted( $post_id, array(
+			'token_id' => '42',
+			'tx_hash'  => '0xabc',
+			'contract' => '0xdef',
+			'license'  => 'All Rights Reserved',
+		) );
+
+		$this->assertSame( '42', PostMeta::get_token_id( $post_id ) );
+		$this->assertSame( '0xdef', PostMeta::get_contract( $post_id ) );
+		$this->assertSame( 'All Rights Reserved', PostMeta::get_license( $post_id ) );
+	}
+
+	public function test_accessors_return_empty_string_before_minting() {
+		$post_id = $this->factory->post->create();
+
+		$this->assertSame( '', PostMeta::get_token_id( $post_id ) );
+		$this->assertSame( '', PostMeta::get_contract( $post_id ) );
+		$this->assertSame( '', PostMeta::get_license( $post_id ) );
+	}
+
 	public function test_save_error_sets_status_and_message() {
 		$post_id = $this->factory->post->create();
 		PostMeta::save_error( $post_id, 'Transaction reverted' );

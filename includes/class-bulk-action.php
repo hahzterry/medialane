@@ -11,6 +11,7 @@ class BulkAction {
 	public static function register() {
 		add_filter( 'bulk_actions-edit-post', array( __CLASS__, 'add_bulk_action' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'render_pending_notice' ) );
 	}
 
 	public static function add_bulk_action( array $actions ): array {
@@ -18,16 +19,46 @@ class BulkAction {
 		return $actions;
 	}
 
+	private static function get_pending_posts(): array {
+		$posts = get_posts( array( 'post_type' => 'post', 'posts_per_page' => 200, 'post_status' => 'publish' ) );
+		return array_filter( $posts, function ( $p ) {
+			return PostMeta::STATUS_MINTED !== PostMeta::get_status( $p->ID );
+		} );
+	}
+
+	public static function render_pending_notice() {
+		$screen = get_current_screen();
+		if ( ! $screen || 'edit-post' !== $screen->id ) {
+			return;
+		}
+		if ( ! current_user_can( Settings::CAP_TOKENIZE ) ) {
+			return;
+		}
+		$count = count( self::get_pending_posts() );
+		if ( $count < 1 ) {
+			return;
+		}
+		printf(
+			'<div class="notice notice-info"><p>%s</p></div>',
+			esc_html( sprintf(
+				/* translators: %d: number of published posts not yet tokenized. */
+				_n(
+					'%d published post has not been tokenized yet with Medialane. Select it below and use the "Tokenize with Medialane" bulk action.',
+					'%d published posts have not been tokenized yet with Medialane. Select them below and use the "Tokenize with Medialane" bulk action.',
+					$count,
+					'medialane'
+				),
+				$count
+			) )
+		);
+	}
+
 	public static function enqueue( string $hook ) {
 		if ( 'edit.php' !== $hook ) {
 			return;
 		}
-		$posts = get_posts( array( 'post_type' => 'post', 'posts_per_page' => 200, 'post_status' => 'publish' ) );
 		$summaries = array();
-		foreach ( $posts as $p ) {
-			if ( PostMeta::STATUS_MINTED === PostMeta::get_status( $p->ID ) ) {
-				continue;
-			}
+		foreach ( self::get_pending_posts() as $p ) {
 			$summaries[ $p->ID ] = array(
 				'title'       => get_the_title( $p ),
 				'excerpt'     => get_the_excerpt( $p ),

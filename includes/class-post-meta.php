@@ -63,4 +63,16 @@ class PostMeta {
 	public static function get_error( int $post_id ): string {
 		return (string) get_post_meta( $post_id, self::KEY_ERROR, true );
 	}
+
+	public static function get_token_id( int $post_id ): string {
+		return (string) get_post_meta( $post_id, self::KEY_TOKEN_ID, true );
+	}
+
+	public static function get_contract( int $post_id ): string {
+		return (string) get_post_meta( $post_id, self::KEY_CONTRACT, true );
+	}
+
+	public static function get_license( int $post_id ): string {
+		return (string) get_post_meta( $post_id, self::KEY_LICENSE, true );
+	}
 }

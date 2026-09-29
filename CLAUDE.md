@@ -72,6 +72,21 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   `class-metabox.php`, and `class-bulk-action.php`). This works because each
   screen enqueues its own script on its own admin page: settings page, post
   editor, or Posts list.
+- After a batch mint confirms, `mintedTokenIdsFromReceipt()` in `wallet.js`
+  reads each entry's real on-chain token id off the confirmed receipt's
+  `Transfer(from=0)` events, in call order, and `executeMintBatch()` saves
+  one per post. Post meta held an empty token id before this existed.
+- `includes/class-asset-badge.php` appends a public "IP Protected &
+  Tokenized" card to a minted post's own single-post page (`the_content`
+  filter, gated to `is_singular('post') && in_the_loop() && is_main_query()`),
+  linking to that token's asset page on `medialane.io`. It reads straight
+  from post meta (`PostMeta::get_contract()`/`get_token_id()`/`get_license()`)
+  — no new backend call, since everything it needs was already saved at mint
+  time.
+- `BulkAction::render_pending_notice()` shows an admin notice on the Posts
+  list screen when published posts exist that haven't been tokenized yet,
+  pointing at the same bulk action. It shares `get_pending_posts()` with
+  `enqueue()` rather than querying twice.
 
 ## Common pitfalls
 

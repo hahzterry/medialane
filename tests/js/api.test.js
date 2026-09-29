@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   createMintIntent, getToken, buildSponsoredInvoke, executeSponsoredInvoke,
-  buildSponsoredDeploy, provisionRecipientWallet,
+  buildSponsoredDeploy, provisionRecipientWallet, saveCollectionEntry, saveCategoryMap,
 } from "../../assets/src/api.js";
 
 describe("api client", () => {
@@ -68,5 +68,24 @@ describe("api client", () => {
       expect.objectContaining({ method: "POST" }),
     );
     expect(body.data.walletAddress).toBe("0xnew");
+  });
+
+  it("saveCollectionEntry posts to /settings/collections", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ collections: [{ contract: "0xa", label: "News" }] }) });
+    const body = await saveCollectionEntry({ contract: "0xa", label: "News" });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/settings/collections"),
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(body.collections).toHaveLength(1);
+  });
+
+  it("saveCategoryMap posts to /settings/category-map", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ map: { 2: "0xa" } }) });
+    await saveCategoryMap({ 2: "0xa" });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/settings/category-map"),
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 });

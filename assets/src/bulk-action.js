@@ -9,33 +9,42 @@ function chunk(array, size) {
   return out;
 }
 
+// Posts can be routed to different collections (by category mapping in
+// Settings), so a batch can't just be one collectionContract anymore —
+// entries are grouped by their resolved collection first, then each
+// group is chunked and executed as its own batch.
 export async function tokenizeBulk(postIds, onProgress) {
   const data = window.medialaneData;
-  if (!data.collectionContract) {
-    throw new Error("No collection configured.");
-  }
   const { address, account } = await connectWallet();
 
-  const entries = [];
+  const entriesByCollection = new Map();
   for (const postId of postIds) {
     const post = data.posts[postId];
     if (!post) continue;
+    const collectionContract = post.collectionContract || data.collectionContract;
+    if (!collectionContract) {
+      throw new Error("No collection configured.");
+    }
     onProgress && onProgress(postId, "preparing");
     const body = data.contentScope === "full" ? post.content : post.excerpt;
-    entries.push(await prepareMint({
+    const entry = await prepareMint({
       postId, title: post.title, body, image: post.image, license: data.licenseDefault, address,
-      collectionContract: data.collectionContract, authorEmail: post.authorEmail,
+      collectionContract, authorEmail: post.authorEmail,
       aiPolicy: data.aiPolicyDefault,
-    }));
+    });
+    if (!entriesByCollection.has(collectionContract)) entriesByCollection.set(collectionContract, []);
+    entriesByCollection.get(collectionContract).push(entry);
   }
 
-  for (const group of chunk(entries, MAX_BATCH_SIZE)) {
-    group.forEach((e) => onProgress && onProgress(e.postId, "minting"));
-    const results = await executeMintBatch({
-      restUrl: data.restUrl, nonce: data.nonce, account, address,
-      collectionContract: data.collectionContract, entries: group,
-    });
-    results.forEach((r) => onProgress && onProgress(r.postId, r.error ? "error" : "minted", r.error));
+  for (const [collectionContract, entries] of entriesByCollection) {
+    for (const group of chunk(entries, MAX_BATCH_SIZE)) {
+      group.forEach((e) => onProgress && onProgress(e.postId, "minting"));
+      const results = await executeMintBatch({
+        restUrl: data.restUrl, nonce: data.nonce, account, address,
+        collectionContract, entries: group,
+      });
+      results.forEach((r) => onProgress && onProgress(r.postId, r.error ? "error" : "minted", r.error));
+    }
   }
 }
 

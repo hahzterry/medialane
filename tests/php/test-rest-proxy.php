@@ -135,4 +135,40 @@ class Test_Rest_Proxy extends WP_UnitTestCase {
 		$this->assertStringEndsWith( '/v1/paymaster/deploy/build', $captured_urls[0] );
 		$this->assertStringEndsWith( '/v1/business/provisioning', $captured_urls[1] );
 	}
+
+	public function test_settings_collections_route_appends_a_named_collection() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/collections' );
+		$request->set_body_params( array( 'contract' => '0xaaa11', 'label' => 'Politics' ) );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame(
+			array( array( 'contract' => '0xaaa11', 'label' => 'Politics' ) ),
+			$response->get_data()['collections']
+		);
+	}
+
+	public function test_settings_collections_route_requires_admin_permission() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/collections' );
+		$request->set_body_params( array( 'contract' => '0xaaa11', 'label' => 'Politics' ) );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+	}
+
+	public function test_settings_category_map_route_saves_the_mapping() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$cat_id = $this->factory->category->create();
+
+		$request = new WP_REST_Request( 'POST', '/medialane/v1/settings/category-map' );
+		$request->set_body_params( array( 'map' => array( (string) $cat_id => '0xbbb22' ) ) );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( array( $cat_id => '0xbbb22' ), Settings::get_category_map() );
+	}
 }

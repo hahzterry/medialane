@@ -26,6 +26,17 @@ class Metabox {
 					<p><?php esc_html_e( 'Minted', 'medialane' ); ?></p>
 					<p><a href="https://voyager.online/tx/<?php echo esc_attr( get_post_meta( $post->ID, PostMeta::KEY_TX_HASH, true ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View transaction', 'medialane' ); ?></a></p>
 				<?php else : ?>
+					<?php $collections = Settings::get_collections(); ?>
+					<?php if ( count( $collections ) > 1 ) : ?>
+						<p>
+							<label for="medialane-collection"><?php esc_html_e( 'Collection', 'medialane' ); ?></label>
+							<select id="medialane-collection">
+								<?php foreach ( $collections as $collection ) : ?>
+									<option value="<?php echo esc_attr( $collection['contract'] ); ?>" <?php selected( Settings::resolve_collection_for_post( $post->ID ), $collection['contract'] ); ?>><?php echo esc_html( $collection['label'] ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</p>
+					<?php endif; ?>
 					<p>
 						<label for="medialane-license"><?php esc_html_e( 'License', 'medialane' ); ?></label>
 						<select id="medialane-license">
@@ -55,7 +66,7 @@ class Metabox {
 			'restUrl'            => esc_url_raw( rest_url( 'medialane/v1' ) ),
 			'nonce'              => wp_create_nonce( 'wp_rest' ),
 			'walletAddress'      => Settings::get_wallet_address(),
-			'collectionContract' => Settings::get_collection_contract(),
+			'collectionContract' => $post ? Settings::resolve_collection_for_post( $post->ID ) : Settings::get_default_collection(),
 			'contentScope'       => Settings::get_content_scope(),
 			'aiPolicyDefault'    => Settings::get_ai_policy_default(),
 			'postId'             => $post ? $post->ID : 0,

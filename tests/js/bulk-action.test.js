@@ -59,6 +59,30 @@ describe("tokenizeBulk", () => {
     }));
   });
 
+  it("groups posts by their resolved collection into separate batches", async () => {
+    global.window.medialaneData.posts = {
+      1: { title: "A", excerpt: "a", content: "aa", image: "", authorEmail: "a@example.com", collectionContract: "0xnews" },
+      2: { title: "B", excerpt: "b", content: "bb", image: "", authorEmail: "b@example.com", collectionContract: "0xsports" },
+    };
+    const { executeSponsoredInvoke, createMintIntent } = await import("../../assets/src/api.js");
+    executeSponsoredInvoke.mockClear();
+    createMintIntent.mockClear();
+
+    await tokenizeBulk(["1", "2"], () => {});
+
+    expect(executeSponsoredInvoke).toHaveBeenCalledTimes(2);
+    expect(createMintIntent).toHaveBeenCalledWith(expect.objectContaining({ collectionId: "0xnews" }));
+    expect(createMintIntent).toHaveBeenCalledWith(expect.objectContaining({ collectionId: "0xsports" }));
+  });
+
+  it("throws when a post has no resolvable collection at all", async () => {
+    global.window.medialaneData.collectionContract = "";
+    global.window.medialaneData.posts = {
+      1: { title: "A", excerpt: "a", content: "aa", image: "", authorEmail: "a@example.com", collectionContract: "" },
+    };
+    await expect(tokenizeBulk(["1"], () => {})).rejects.toThrow("No collection configured");
+  });
+
   it("splits more than 25 posts into multiple batches", async () => {
     const postIds = Array.from({ length: 30 }, (_, i) => String(i + 1));
     global.window.medialaneData.posts = Object.fromEntries(

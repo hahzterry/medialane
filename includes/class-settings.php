@@ -10,6 +10,8 @@ class Settings {
 	const OPTION_API_KEY    = 'medialane_api_key';
 	const OPTION_WALLET     = 'medialane_wallet_address';
 	const OPTION_COLLECTION = 'medialane_collection_contract';
+	const OPTION_COLLECTIONS = 'medialane_collections';
+	const OPTION_CATEGORY_MAP = 'medialane_category_collections';
 	const OPTION_LICENSE_DEFAULT = 'medialane_license_default';
 	const OPTION_AI_POLICY_DEFAULT = 'medialane_ai_policy_default';
 	const OPTION_CONTENT_SCOPE   = 'medialane_content_scope'; // 'excerpt' | 'full'
@@ -90,6 +92,72 @@ class Settings {
 		update_option( self::OPTION_COLLECTION, self::sanitize_address( $address ) );
 	}
 
+	public static function get_default_collection(): string {
+		return self::get_collection_contract();
+	}
+
+	public static function set_default_collection( string $address ) {
+		self::save_collection_contract( $address );
+	}
+
+	public static function get_collections(): array {
+		$collections = get_option( self::OPTION_COLLECTIONS, array() );
+		return is_array( $collections ) ? $collections : array();
+	}
+
+	public static function add_collection( string $contract, string $label ) {
+		$contract    = self::sanitize_address( $contract );
+		$label       = sanitize_text_field( $label );
+		$collections = self::get_collections();
+
+		$existing_index = null;
+		foreach ( $collections as $i => $entry ) {
+			if ( $entry['contract'] === $contract ) {
+				$existing_index = $i;
+				break;
+			}
+		}
+		if ( null !== $existing_index ) {
+			$collections[ $existing_index ]['label'] = $label;
+		} else {
+			$collections[] = array( 'contract' => $contract, 'label' => $label );
+		}
+		update_option( self::OPTION_COLLECTIONS, $collections );
+
+		if ( ! self::get_default_collection() ) {
+			self::set_default_collection( $contract );
+		}
+	}
+
+	public static function get_category_map(): array {
+		$map = get_option( self::OPTION_CATEGORY_MAP, array() );
+		return is_array( $map ) ? $map : array();
+	}
+
+	public static function save_category_map( array $map ) {
+		$sanitized = array();
+		foreach ( $map as $category_id => $contract ) {
+			$contract = self::sanitize_address( (string) $contract );
+			if ( $contract ) {
+				$sanitized[ (int) $category_id ] = $contract;
+			}
+		}
+		update_option( self::OPTION_CATEGORY_MAP, $sanitized );
+	}
+
+	public static function resolve_collection_for_post( int $post_id ): string {
+		$map = self::get_category_map();
+		if ( $map ) {
+			$categories = get_the_category( $post_id );
+			foreach ( $categories as $category ) {
+				if ( isset( $map[ $category->term_id ] ) ) {
+					return $map[ $category->term_id ];
+				}
+			}
+		}
+		return self::get_default_collection();
+	}
+
 	public static function get_content_scope(): string {
 		$scope = get_option( self::OPTION_CONTENT_SCOPE, 'excerpt' );
 		return in_array( $scope, array( 'excerpt', 'full' ), true ) ? $scope : 'excerpt';
@@ -168,8 +236,65 @@ class Settings {
 				<input type="hidden" id="medialane_wallet_address" name="<?php echo esc_attr( self::OPTION_WALLET ); ?>" value="<?php echo esc_attr( self::get_wallet_address() ); ?>" />
 				<?php submit_button(); ?>
 			</form>
-			<?php if ( self::get_collection_contract() ) : ?>
-				<p><?php esc_html_e( 'Collection contract:', 'medialane' ); ?> <code><?php echo esc_html( self::get_collection_contract() ); ?></code></p>
+
+			<?php $collections = self::get_collections(); ?>
+			<?php if ( $collections ) : ?>
+				<h2><?php esc_html_e( 'Collections', 'medialane' ); ?></h2>
+				<table class="widefat" style="max-width:640px;">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Label', 'medialane' ); ?></th>
+							<th><?php esc_html_e( 'Contract', 'medialane' ); ?></th>
+							<th><?php esc_html_e( 'Default', 'medialane' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $collections as $collection ) : ?>
+							<tr>
+								<td><?php echo esc_html( $collection['label'] ); ?></td>
+								<td><code><?php echo esc_html( $collection['contract'] ); ?></code></td>
+								<td><?php echo $collection['contract'] === self::get_default_collection() ? esc_html__( 'Yes', 'medialane' ) : ''; ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php endif; ?>
+
+			<h2><?php esc_html_e( 'Create a new collection', 'medialane' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'A separate collection to mint into — useful for organizing tokenized posts by section, author, or archive. The first collection you create becomes the default.', 'medialane' ); ?></p>
+			<p>
+				<input type="text" id="medialane-new-collection-label" placeholder="<?php esc_attr_e( 'Collection name, e.g. Politics', 'medialane' ); ?>" class="regular-text" />
+				<button type="button" id="medialane-create-collection" class="button"><?php esc_html_e( 'Create Collection', 'medialane' ); ?></button>
+			</p>
+
+			<?php if ( count( $collections ) > 1 ) : ?>
+				<h2><?php esc_html_e( 'Route categories to collections', 'medialane' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Posts in a mapped category are tokenized into that collection instead of the default. Bulk tokenization and the per-post editor both use this.', 'medialane' ); ?></p>
+				<?php $category_map = self::get_category_map(); ?>
+				<table class="widefat" style="max-width:640px;">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Category', 'medialane' ); ?></th>
+							<th><?php esc_html_e( 'Collection', 'medialane' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( get_categories( array( 'hide_empty' => false ) ) as $category ) : ?>
+							<tr>
+								<td><?php echo esc_html( $category->name ); ?></td>
+								<td>
+									<select class="medialane-category-collection-select" data-category-id="<?php echo esc_attr( $category->term_id ); ?>">
+										<option value=""><?php esc_html_e( 'Use default collection', 'medialane' ); ?></option>
+										<?php foreach ( $collections as $collection ) : ?>
+											<option value="<?php echo esc_attr( $collection['contract'] ); ?>" <?php selected( isset( $category_map[ $category->term_id ] ) ? $category_map[ $category->term_id ] : '', $collection['contract'] ); ?>><?php echo esc_html( $collection['label'] ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+				<p><button type="button" id="medialane-save-category-map" class="button button-primary"><?php esc_html_e( 'Save Mapping', 'medialane' ); ?></button></p>
 			<?php endif; ?>
 		</div>
 		<?php

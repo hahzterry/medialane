@@ -31,9 +31,22 @@ phpunit -c phpunit.xml.dist   # requires WP_TESTS_DIR (WP core test lib)
   `/medialane/v1/paymaster/invoke/{build,execute}`). The caller signs with
   their own wallet, using `wallet.js`'s `signTypedData()`, which wraps
   `WalletAccount.signMessage`. The paymaster covers the network fee.
-- One `mip-erc721` collection exists per site, created on first wallet
-  connect (`assets/src/settings.js`), resolved via `GET /v1/collections?owner=`
-  and persisted to `wp_options` through `/settings/collection`.
+- A site can hold multiple `mip-erc721` collections, all owned by the same
+  connected wallet (the chain only enforces single ownership, not which of
+  an owner's collections a mint targets). `Settings::get_collections()`
+  holds the named list (`medialane_collections`); the first one created
+  becomes `Settings::get_default_collection()` automatically and stays the
+  default until explicitly changed. `assets/src/settings.js`'s
+  `createAndRegisterCollection()` creates one on-chain (`GET
+  /v1/collections?owner=` confirms it indexed) and registers it via
+  `POST /settings/collections`. `Settings::resolve_collection_for_post()`
+  picks which collection a given post routes to: its first category
+  matched against `Settings::get_category_map()`
+  (`medialane_category_collections`, `POST /settings/category-map`), falling
+  back to the default. The metabox exposes a manual override `<select>`
+  when more than one collection exists; the bulk action groups posts by
+  their resolved collection and runs one batch transaction per group,
+  since `executeMintBatch()` still only ever targets one collection per call.
 - Post state (`none|minting|minted|error`) lives in post meta, written only
   by PHP (`includes/class-post-meta.php`) through the `/posts/{id}/minting`,
   `/posts/{id}/minted`, and `/posts/{id}/error` REST routes. JS reads this

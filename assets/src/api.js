@@ -52,6 +52,14 @@ export function getCollectionsByOwner(owner) {
   return request(`/collections?owner=${encodeURIComponent(owner)}`, { method: "GET" });
 }
 
+export function saveCollectionEntry({ contract, label }) {
+  return request("/settings/collections", { method: "POST", body: JSON.stringify({ contract, label }) });
+}
+
+export function saveCategoryMap(map) {
+  return request("/settings/category-map", { method: "POST", body: JSON.stringify({ map }) });
+}
+
 export function buildSponsoredInvoke(params) {
   return request("/paymaster/invoke/build", { method: "POST", body: JSON.stringify(params) });
 }

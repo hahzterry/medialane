@@ -59,4 +59,60 @@ class Test_Settings extends WP_UnitTestCase {
 		$this->assertSame( 'Not Allowed', Settings::get_ai_policy_default() );
 		delete_option( Settings::OPTION_AI_POLICY_DEFAULT );
 	}
+
+	public function test_add_collection_appends_it_to_the_list_and_makes_it_the_default_when_none_exists() {
+		delete_option( Settings::OPTION_COLLECTIONS );
+		delete_option( Settings::OPTION_COLLECTION );
+
+		Settings::add_collection( '0xaaa', 'General' );
+
+		$this->assertSame( array( array( 'contract' => '0xaaa', 'label' => 'General' ) ), Settings::get_collections() );
+		$this->assertSame( '0xaaa', Settings::get_default_collection() );
+	}
+
+	public function test_add_collection_does_not_change_the_default_once_one_is_already_set() {
+		delete_option( Settings::OPTION_COLLECTIONS );
+		Settings::add_collection( '0xaaa', 'General' );
+		Settings::add_collection( '0xbbb', 'News' );
+
+		$this->assertSame( '0xaaa', Settings::get_default_collection() );
+		$this->assertCount( 2, Settings::get_collections() );
+	}
+
+	public function test_add_collection_deduplicates_by_contract() {
+		delete_option( Settings::OPTION_COLLECTIONS );
+		Settings::add_collection( '0xaaa', 'General' );
+		Settings::add_collection( '0xaaa', 'General (renamed)' );
+
+		$collections = Settings::get_collections();
+		$this->assertCount( 1, $collections );
+		$this->assertSame( 'General (renamed)', $collections[0]['label'] );
+	}
+
+	public function test_resolve_collection_for_post_uses_the_category_map_when_present() {
+		delete_option( Settings::OPTION_COLLECTIONS );
+		delete_option( Settings::OPTION_COLLECTION );
+		delete_option( Settings::OPTION_CATEGORY_MAP );
+
+		Settings::add_collection( '0xdefa01', 'Default' );
+		Settings::add_collection( '0xbbb22', 'News' );
+
+		$news_cat_id = $this->factory->category->create( array( 'name' => 'News' ) );
+		$post_id     = $this->factory->post->create( array( 'post_category' => array( $news_cat_id ) ) );
+
+		Settings::save_category_map( array( $news_cat_id => '0xbbb22' ) );
+
+		$this->assertSame( '0xbbb22', Settings::resolve_collection_for_post( $post_id ) );
+	}
+
+	public function test_resolve_collection_for_post_falls_back_to_the_default_collection() {
+		delete_option( Settings::OPTION_COLLECTIONS );
+		delete_option( Settings::OPTION_COLLECTION );
+		delete_option( Settings::OPTION_CATEGORY_MAP );
+
+		Settings::add_collection( '0xdefa01', 'Default' );
+		$post_id = $this->factory->post->create();
+
+		$this->assertSame( '0xdefa01', Settings::resolve_collection_for_post( $post_id ) );
+	}
 }

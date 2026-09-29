@@ -87,6 +87,16 @@ class RestProxy {
 			'callback'            => array( __CLASS__, 'forward_list_collections' ),
 			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
 		) );
+		register_rest_route( self::NAMESPACE, '/settings/collections', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_collections' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
+		) );
+		register_rest_route( self::NAMESPACE, '/settings/category-map', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_category_map' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
+		) );
 		register_rest_route( self::NAMESPACE, '/posts/(?P<id>\d+)/minting', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'save_minting' ),
@@ -131,6 +141,19 @@ class RestProxy {
 		$address = (string) $request->get_param( 'contract' );
 		Settings::save_collection_contract( $address );
 		return rest_ensure_response( array( 'contract' => Settings::get_collection_contract() ) );
+	}
+
+	public static function save_collections( \WP_REST_Request $request ) {
+		$contract = (string) $request->get_param( 'contract' );
+		$label    = (string) $request->get_param( 'label' );
+		Settings::add_collection( $contract, $label );
+		return rest_ensure_response( array( 'collections' => Settings::get_collections() ) );
+	}
+
+	public static function save_category_map( \WP_REST_Request $request ) {
+		$map = $request->get_param( 'map' );
+		Settings::save_category_map( is_array( $map ) ? $map : array() );
+		return rest_ensure_response( array( 'map' => Settings::get_category_map() ) );
 	}
 
 	public static function forward_list_collections( \WP_REST_Request $request ) {

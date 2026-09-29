@@ -10,15 +10,17 @@ export async function tokenizePost(postId) {
 
   const { address, account } = await connectWallet();
   const body = data.contentScope === "full" ? data.postContent : data.postExcerpt;
+  const collectionSelect = document.getElementById("medialane-collection");
+  const collectionContract = (collectionSelect && collectionSelect.value) || data.collectionContract;
 
   const entry = await prepareMint({
     postId, title: data.postTitle, body, image: data.featuredImageUrl, license, address,
-    collectionContract: data.collectionContract, authorEmail: data.authorEmail,
+    collectionContract, authorEmail: data.authorEmail,
     aiPolicy: data.aiPolicyDefault,
   });
   const [result] = await executeMintBatch({
     restUrl: data.restUrl, nonce: data.nonce, account, address,
-    collectionContract: data.collectionContract, entries: [entry],
+    collectionContract, entries: [entry],
   });
   if (result.error) {
     throw new Error(result.error);
